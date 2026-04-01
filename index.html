@@ -16,7 +16,7 @@
     body { font-family: 'DM Sans', sans-serif; }
     .font-playfair { font-family: 'Playfair Display', serif; }
     @media print {
-      @page { margin: 1.5cm; size: A4 portrait; }
+      @page { margin: 1cm; size: A4 portrait; }
       body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
       .print-only { display: block !important; }
@@ -299,6 +299,23 @@
       const [searchResult, setSearchResult] = useState(null);
       const [isSearching, setIsSearching] = useState(false);
       const [searchError, setSearchError] = useState(false);
+      const [publicList, setPublicList] = useState([]);
+      const [isLoadingPublicList, setIsLoadingPublicList] = useState(false);
+
+      const fetchPublicList = async () => {
+        setIsLoadingPublicList(true);
+        try {
+          const data = await fetchPost({ action: 'getList', role: 'public' });
+          if (data.status === 'ok') {
+            const sorted = (data.rows || []).reverse();
+            setPublicList(sorted);
+          }
+        } catch (e) {
+          console.warn("Gagal memuat daftar:", e);
+        } finally {
+          setIsLoadingPublicList(false);
+        }
+      };
 
       const handleSearch = async (overrideNo) => {
         const queryNo = typeof overrideNo === 'string' ? overrideNo.trim() : searchNo.trim();
@@ -327,7 +344,10 @@
         if (initialView === 'cetak' && initialNo) {
           handleSearch(initialNo);
         }
-      }, [initialView, initialNo]);
+        if (appView === 'cetak') {
+          fetchPublicList();
+        }
+      }, [appView, initialView, initialNo]);
 
       const formatDateId = (dStr) => {
         if (!dStr) return '-';
@@ -364,11 +384,11 @@
             </div>
           </header>
 
-          <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 no-print flex-grow">
+          <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 flex-grow">
             
             {/* VIEW FORM PENGAJUAN */}
             {appView === 'form' && (
-              <div className="animate-in fade-in duration-500">
+              <div className="animate-in fade-in duration-500 no-print">
                 {formStep < 4 && (
                   <div className="mb-8">
                     <h2 className="font-playfair text-2xl text-[#0d1b2a] mb-2">Formulir Pengajuan Surat Kuasa</h2>
@@ -588,7 +608,7 @@
 
             {/* VIEW PORTAL PERSETUJUAN */}
             {appView === 'approval' && (
-              <div className="animate-in fade-in duration-500">
+              <div className="animate-in fade-in duration-500 no-print">
                 {!isLoggedIn ? (
                   <div className="max-w-md mx-auto mt-10 bg-white rounded-3xl p-8 border border-[#ddd5c0] shadow-sm text-center">
                     <LockIcon className="mx-auto text-[#0d1b2a] mb-4" size={32} />
@@ -696,17 +716,17 @@
                             <div className="grid grid-cols-3"><span className="text-slate-500">Masa Berlaku</span><span className="col-span-2">{formatDateId(selectedSurat.berlaku_mulai)} - {formatDateId(selectedSurat.berlaku_sampai)}</span></div>
                             <div className="grid grid-cols-3"><span className="text-slate-500">Alasan</span><span className="col-span-2">{selectedSurat.alasan}</span></div>
                             <div className="grid grid-cols-3"><span className="text-slate-500">Wewenang</span><span className="col-span-2">{selectedSurat.wewenang}</span></div>
-                    
-                    {selectedSurat.ttd_pemberi && (
-                      <div className="grid grid-cols-3 items-center border-t border-dashed border-[#ddd5c0] pt-3 mt-3">
-                        <span className="text-slate-500">Tanda Tangan Pemberi</span>
-                        <span className="col-span-2">
-                          <img src={selectedSurat.ttd_pemberi} alt="TTD" className="h-16 object-contain border border-[#ddd5c0] rounded bg-slate-50 px-2 py-1" />
-                        </span>
-                      </div>
-                    )}
+                            
+                            {selectedSurat.ttd_pemberi && (
+                              <div className="grid grid-cols-3 items-center border-t border-dashed border-[#ddd5c0] pt-3 mt-3">
+                                <span className="text-slate-500">Tanda Tangan Pemberi</span>
+                                <span className="col-span-2">
+                                  <img src={selectedSurat.ttd_pemberi} alt="TTD" className="h-16 object-contain border border-[#ddd5c0] rounded bg-slate-50 px-2 py-1" />
+                                </span>
+                              </div>
+                            )}
 
-                    {/* RIWAYAT PERSETUJUAN MULTI-STEP */}
+                            {/* RIWAYAT PERSETUJUAN MULTI-STEP */}
                             <div className="mt-4 border-t border-[#ddd5c0] pt-4">
                               <p className="text-[10px] uppercase text-slate-500 font-bold mb-3">Riwayat Persetujuan</p>
                               <div className="space-y-3">
@@ -765,146 +785,202 @@
             {/* VIEW CEK & CETAK */}
             {appView === 'cetak' && (
               <div className="animate-in fade-in duration-500">
-                <div className="bg-white rounded-2xl p-8 border border-[#ddd5c0] shadow-sm text-center mb-6 no-print">
-                  <h2 className="font-playfair text-2xl text-[#0d1b2a] mb-2">Pelacakan Dokumen</h2>
-                  <p className="text-sm text-slate-500 mb-6">Gunakan nomor referensi untuk melacak atau mencetak surat kuasa.</p>
-                  <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input type="text" value={searchNo} onChange={e => setSearchNo(e.target.value)} placeholder="Contoh: SK-2026-001" className="flex-1 px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center sm:text-left" />
-                    <button onClick={handleSearch} disabled={isSearching} className="bg-[#c9a84c] text-[#0d1b2a] font-bold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-[#b59542] transition-colors">
-                      <SearchIcon size={18} /> Lacak
-                    </button>
-                  </div>
-                </div>
-
-                {searchError && (
-                  <div className="bg-red-50 text-red-600 p-6 rounded-2xl text-center border border-red-100 no-print">
-                    <p className="font-bold">Sistem tidak menemukan nomor tersebut.</p>
-                    <p className="text-sm">Periksa kembali penulisan nomor referensi.</p>
-                  </div>
-                )}
-
-                {searchResult && (
-                  <div className="bg-white rounded-2xl border border-[#ddd5c0] shadow-sm overflow-hidden mb-10 no-print">
-                    <div className={`p-6 border-b-4 ${searchResult.status === 'Disetujui' ? 'border-[#1a6b4a] bg-[#eaf5ef]' : searchResult.status === 'Ditolak' ? 'border-[#c0392b] bg-[#fdf0ee]' : 'border-[#b06c00] bg-[#fff8ec]'}`}>
-                      <h3 className="font-playfair text-xl text-[#0d1b2a] mb-1">Status Dokumen: {searchResult.status}</h3>
-                      <p className="font-mono text-sm font-bold opacity-70">No: {searchResult.nomorSurat}</p>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid grid-cols-2 gap-4 text-sm mb-6 border-b pb-6 border-dashed border-slate-200">
-                        <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Pemberi</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_pemberi}</span></div>
-                        <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Penerima</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_penerima}</span></div>
-                        <div className="col-span-2"><span className="block text-[10px] uppercase text-slate-500 font-bold">Wewenang</span><span>{searchResult.wewenang}</span></div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3"><CheckCircle size={16} className="text-[#1a6b4a]" /><span className="text-sm">Pengajuan Berhasil ({formatDateId(searchResult.tgl_submit.split('T')[0])})</span></div>
-                        <div className="flex items-center gap-3">
-                          {searchResult.status_ketua === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_ketua === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
-                          <span className="text-sm">Respons Ketua {searchResult.catatan_ketua && <span className="text-slate-500 italic">"{searchResult.catatan_ketua}"</span>}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {searchResult.status_manager === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_manager === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
-                          <span className="text-sm">Respons Manager {searchResult.catatan_manager && <span className="text-slate-500 italic">"{searchResult.catatan_manager}"</span>}</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-8 border-t border-[#ddd5c0] pt-6">
-                        {searchResult.status === 'Disetujui' ? (
-                          <button onClick={() => window.print()} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
-                            <Printer size={18} /> Cetak Salinan PDF Surat Kuasa
-                          </button>
-                        ) : (
-                          <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
-                            <p className="text-sm text-slate-500">🔒 Surat resmi baru akan dibentuk dan dapat dicetak setelah disetujui sepenuhnya oleh Ketua dan Manager.</p>
-                          </div>
-                        )}
+                {!searchResult ? (
+                  <>
+                    <div className="bg-white rounded-2xl p-8 border border-[#ddd5c0] shadow-sm text-center mb-6 no-print">
+                      <h2 className="font-playfair text-2xl text-[#0d1b2a] mb-2">Pelacakan Dokumen</h2>
+                      <p className="text-sm text-slate-500 mb-6">Gunakan nomor referensi atau pilih dari daftar di bawah untuk melacak surat kuasa.</p>
+                      <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                        <input type="text" value={searchNo} onChange={e => setSearchNo(e.target.value)} placeholder="Contoh: SK-2026-001" className="flex-1 px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center sm:text-left" />
+                        <button onClick={() => handleSearch(searchNo)} disabled={isSearching} className="bg-[#c9a84c] text-[#0d1b2a] font-bold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-[#b59542] transition-colors">
+                          <SearchIcon size={18} /> Lacak
+                        </button>
                       </div>
                     </div>
-                  </div>
-                )}
 
-                {/* TAMPILAN CETAK PDF (Hanya muncul jika di-print DAN status Disetujui) */}
-                {searchResult && searchResult.status === 'Disetujui' && (
-                  <div id="print-area" className="hidden print-only text-black bg-white min-h-[1050px] p-10 font-serif text-sm">
-                    <div className="flex items-center border-b-[3px] border-double border-black pb-5 mb-8">
-                      <div className="w-24 shrink-0">
-                        <img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" alt="Logo KOPKAR AKM" className="w-full h-auto object-contain" />
+                    {searchError && (
+                      <div className="bg-red-50 text-red-600 p-6 rounded-2xl text-center border border-red-100 mb-6 no-print">
+                        <p className="font-bold">Sistem tidak menemukan nomor tersebut.</p>
+                        <p className="text-sm">Periksa kembali penulisan nomor referensi.</p>
                       </div>
-                      <div className="flex-1 text-center px-2">
-                        <h2 className="font-serif text-xl font-bold uppercase tracking-wide text-black mb-1">Koperasi Karyawan Adaro Karya Mandiri</h2>
-                        <p className="text-xs font-semibold text-black mb-1">Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p>
-                        <p className="text-[10px] text-black leading-relaxed">
-                          Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br/>
-                          Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan Kode Pos 71571<br/>
-                          Telp/Fax : 0526 – 2023593 &nbsp;|&nbsp; email : kopkar.adaro@gmail.com
-                        </p>
+                    )}
+
+                    <div className="bg-white rounded-2xl border border-[#ddd5c0] overflow-hidden shadow-sm no-print mb-10">
+                      <div className="p-5 border-b border-[#ddd5c0] bg-slate-50 flex justify-between items-center">
+                        <h3 className="font-playfair text-lg text-[#0d1b2a]">Daftar Pengajuan Terbaru</h3>
+                        <button onClick={fetchPublicList} className="text-xs font-bold text-[#c9a84c] hover:text-[#b59542]">Segarkan</button>
                       </div>
-                      <div className="w-24 shrink-0"></div>
-                    </div>
-
-                    <div className="text-center mb-6">
-                      <h3 className="font-serif text-base font-bold underline tracking-widest">SURAT KUASA</h3>
-                      <p className="text-xs mt-1">Nomor Referensi: {searchResult.nomorSurat}</p>
-                    </div>
-
-                    <div className="leading-relaxed space-y-3">
-                      <p>Pihak yang bertanda tangan di bawah ini:</p>
-                      <div className="pl-4 space-y-1">
-                        <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
-                        <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
-                      </div>
-
-                      <p>Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <strong>{searchResult.alasan}</strong>, maka wewenang diberikan penuh kepada:</p>
-                      <div className="pl-4 space-y-1">
-                        <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
-                        <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
-                      </div>
-
-                      <p>Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
-                      <ol className="list-decimal list-outside ml-8 font-bold">
-                        {searchResult.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
-                      </ol>
-
-                      <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(searchResult.berlaku_mulai)}</strong> hingga <strong>{formatDateId(searchResult.berlaku_sampai)}</strong>.</p>
-                      <p>Demikian surat ini disusun secara resmi agar seluruh pihak yang berkepentingan dapat memakluminya.</p>
-                    </div>
-
-                    <div className="mt-12 text-sm">
-                      <p className="text-right mb-4">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
-                      <div className="flex justify-between text-center mt-10">
-                        <div className="w-40 relative">
-                          <p className="mb-2">Pemberi Kuasa,</p>
-                          <div className="h-16 flex items-center justify-center relative">
-                            {/* Tanda Tangan Digital Pemberi */}
-                            {searchResult.ttd_pemberi && (
-                              <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full mix-blend-multiply absolute z-10" />
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap md:whitespace-normal">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-[#ddd5c0] text-[10px] uppercase tracking-wider text-slate-500">
+                              <th className="px-5 py-3 font-bold">No. Surat</th>
+                              <th className="px-5 py-3 font-bold">Pemberi</th>
+                              <th className="px-5 py-3 font-bold">Penerima</th>
+                              <th className="px-5 py-3 font-bold">Status</th>
+                              <th className="px-5 py-3 font-bold text-right">Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#ddd5c0]">
+                            {isLoadingPublicList ? (
+                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Membaca basis data...</td></tr>
+                            ) : publicList.length === 0 ? (
+                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Belum ada pengajuan surat kuasa.</td></tr>
+                            ) : (
+                              publicList.map(row => (
+                                <tr key={row.nomorSurat} className="hover:bg-slate-50">
+                                  <td className="px-5 py-4 font-mono font-bold text-[#0d1b2a]">{row.nomorSurat}</td>
+                                  <td className="px-5 py-4">{row.nama_pemberi}</td>
+                                  <td className="px-5 py-4">{row.nama_penerima}</td>
+                                  <td className="px-5 py-4">
+                                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${
+                                      row.status === 'Menunggu Ketua' ? 'bg-[#fff8ec] text-[#b06c00]' : 
+                                      row.status === 'Menunggu Manager' ? 'bg-[#e8f4ff] text-[#1a5b9a]' : 
+                                      row.status === 'Disetujui' ? 'bg-[#eaf5ef] text-[#1a6b4a]' : 
+                                      'bg-[#fdf0ee] text-[#c0392b]'
+                                    }`}>
+                                      {row.status === 'Menunggu Manager' ? 'ACC Ketua' : row.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-5 py-4 text-right">
+                                    <button onClick={() => handleSearch(row.nomorSurat)} className="text-xs bg-[#c9a84c] hover:bg-[#b59542] text-[#0d1b2a] px-4 py-1.5 rounded-lg font-bold transition-colors">Lacak</button>
+                                  </td>
+                                </tr>
+                              ))
                             )}
-                          </div>
-                          <p className="font-bold underline relative z-20">{searchResult.nama_pemberi}</p>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => { setSearchResult(null); setSearchNo(''); fetchPublicList(); }} className="mb-6 text-sm font-bold flex items-center gap-2 text-slate-500 hover:text-[#0d1b2a] transition-colors no-print">
+                      <ChevronLeft size={18} /> Kembali ke Daftar Surat
+                    </button>
+
+                    <div className="bg-white rounded-2xl border border-[#ddd5c0] shadow-sm overflow-hidden mb-10 no-print">
+                      <div className={`p-6 border-b-4 ${searchResult.status === 'Disetujui' ? 'border-[#1a6b4a] bg-[#eaf5ef]' : searchResult.status === 'Ditolak' ? 'border-[#c0392b] bg-[#fdf0ee]' : 'border-[#b06c00] bg-[#fff8ec]'}`}>
+                        <h3 className="font-playfair text-xl text-[#0d1b2a] mb-1">Status Dokumen: {searchResult.status}</h3>
+                        <p className="font-mono text-sm font-bold opacity-70">No: {searchResult.nomorSurat}</p>
+                      </div>
+                      <div className="p-6">
+                        <div className="grid grid-cols-2 gap-4 text-sm mb-6 border-b pb-6 border-dashed border-slate-200">
+                          <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Pemberi</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_pemberi}</span></div>
+                          <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Penerima</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_penerima}</span></div>
+                          <div className="col-span-2"><span className="block text-[10px] uppercase text-slate-500 font-bold">Wewenang</span><span>{searchResult.wewenang}</span></div>
                         </div>
-                        <div className="w-40 relative">
-                          <p className="mb-2">Ketua Pengurus,</p>
-                          <div className="h-16 flex items-center justify-center relative">
-                            {/* Tanda Tangan Ketua */}
-                            <img src="https://i.ibb.co.com/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="max-h-full mix-blend-multiply absolute z-10 scale-150" />
+
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3"><CheckCircle size={16} className="text-[#1a6b4a]" /><span className="text-sm">Pengajuan Berhasil ({formatDateId(searchResult.tgl_submit.split('T')[0])})</span></div>
+                          <div className="flex items-center gap-3">
+                            {searchResult.status_ketua === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_ketua === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
+                            <span className="text-sm">Respons Ketua {searchResult.catatan_ketua && <span className="text-slate-500 italic">"{searchResult.catatan_ketua}"</span>}</span>
                           </div>
-                          <p className="font-bold underline relative z-20">Ageng Prasongko</p>
+                          <div className="flex items-center gap-3">
+                            {searchResult.status_manager === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_manager === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
+                            <span className="text-sm">Respons Manager {searchResult.catatan_manager && <span className="text-slate-500 italic">"{searchResult.catatan_manager}"</span>}</span>
+                          </div>
                         </div>
-                        <div className="w-40 relative">
-                          <p className="mb-2">Penerima Kuasa,</p>
-                          <div className="h-16 flex items-center justify-center relative">
-                            {/* Tanda Tangan Manager */}
-                            <img src="https://i.ibb.co.com/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="max-h-full mix-blend-multiply absolute z-10 scale-125" />
-                          </div>
-                          <p className="font-bold underline relative z-20">{searchResult.nama_penerima}</p>
+
+                        <div className="mt-8 border-t border-[#ddd5c0] pt-6">
+                          {searchResult.status === 'Disetujui' ? (
+                            <button onClick={() => window.print()} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
+                              <Printer size={18} /> Cetak Salinan PDF Surat Kuasa
+                            </button>
+                          ) : (
+                            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
+                              <p className="text-sm text-slate-500">🔒 Surat resmi baru akan dibentuk dan dapat dicetak setelah disetujui sepenuhnya oleh Ketua dan Manager.</p>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-20 border-t border-dashed border-slate-400 pt-2 text-[10px] text-slate-500 text-center">
-                      Lembar ini dikeluarkan oleh Sistem e-Surat Kuasa Digital KOPKAR AKM. Validasi Sistem: {searchResult.nomorSurat}
-                    </div>
-                  </div>
+                    {/* TAMPILAN CETAK PDF (Hanya muncul jika di-print DAN status Disetujui) */}
+                    {searchResult && searchResult.status === 'Disetujui' && (
+                      <div id="print-area" className="hidden print-only text-black bg-white p-6 font-serif text-[13px] leading-snug">
+                        <div className="flex items-center border-b-[3px] border-double border-black pb-4 mb-6">
+                          <div className="w-20 shrink-0">
+                            <img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" alt="Logo KOPKAR AKM" className="w-full h-auto object-contain" />
+                          </div>
+                          <div className="flex-1 text-center px-2">
+                            <h2 className="font-serif text-lg font-bold uppercase tracking-wide text-black mb-1">Koperasi Karyawan Adaro Karya Mandiri</h2>
+                            <p className="text-[11px] font-semibold text-black mb-1">Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p>
+                            <p className="text-[9px] text-black leading-normal">
+                              Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br/>
+                              Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan Kode Pos 71571<br/>
+                              Telp/Fax : 0526 – 2023593 &nbsp;|&nbsp; email : kopkar.adaro@gmail.com
+                            </p>
+                          </div>
+                          <div className="w-20 shrink-0"></div>
+                        </div>
+
+                        <div className="text-center mb-5">
+                          <h3 className="font-serif text-base font-bold underline tracking-widest">SURAT KUASA</h3>
+                          <p className="text-[11px] mt-1">Nomor Referensi: {searchResult.nomorSurat}</p>
+                        </div>
+
+                        <div className="leading-relaxed space-y-2">
+                          <p>Pihak yang bertanda tangan di bawah ini:</p>
+                          <div className="pl-4 space-y-0.5">
+                            <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
+                            <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
+                          </div>
+
+                          <p className="pt-1">Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <strong>{searchResult.alasan}</strong>, maka wewenang diberikan penuh kepada:</p>
+                          <div className="pl-4 space-y-0.5">
+                            <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
+                            <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
+                          </div>
+
+                          <p className="pt-1">Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
+                          <ol className="list-decimal list-outside ml-8 font-bold py-1">
+                            {searchResult.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
+                          </ol>
+
+                          <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(searchResult.berlaku_mulai)}</strong> hingga <strong>{formatDateId(searchResult.berlaku_sampai)}</strong>.</p>
+                          <p>Demikian surat ini disusun secara resmi agar seluruh pihak yang berkepentingan dapat memakluminya.</p>
+                        </div>
+
+                        <div className="mt-8 text-[13px]">
+                          <p className="text-right mb-2">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
+                          <div className="flex justify-between text-center mt-6">
+                            <div className="w-40 relative">
+                              <p className="mb-1">Pemberi Kuasa,</p>
+                              <div className="h-14 flex items-center justify-center relative">
+                                {/* Tanda Tangan Digital Pemberi */}
+                                {searchResult.ttd_pemberi && (
+                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full mix-blend-multiply absolute z-10" />
+                                )}
+                              </div>
+                              <p className="font-bold underline relative z-20">{searchResult.nama_pemberi}</p>
+                            </div>
+                            <div className="w-40 relative">
+                              <p className="mb-1">Ketua Pengurus,</p>
+                              <div className="h-14 flex items-center justify-center relative">
+                                {/* Tanda Tangan Ketua */}
+                                <img src="https://i.ibb.co.com/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="max-h-full mix-blend-multiply absolute z-10 scale-[1.3]" />
+                              </div>
+                              <p className="font-bold underline relative z-20">Ageng Prasongko</p>
+                            </div>
+                            <div className="w-40 relative">
+                              <p className="mb-1">Penerima Kuasa,</p>
+                              <div className="h-14 flex items-center justify-center relative">
+                                {/* Tanda Tangan Manager */}
+                                <img src="https://i.ibb.co.com/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="max-h-full mix-blend-multiply absolute z-10 scale-110" />
+                              </div>
+                              <p className="font-bold underline relative z-20">{searchResult.nama_penerima}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-12 border-t border-dashed border-slate-400 pt-2 text-[9px] text-slate-500 text-center">
+                          Lembar ini dikeluarkan oleh Sistem e-Surat Kuasa Digital KOPKAR AKM. Validasi Sistem: {searchResult.nomorSurat}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -912,7 +988,7 @@
 
           {/* MODAL DIALOG CUSTOM (Global) */}
           {dialog.isOpen && (
-            <div className="fixed inset-0 bg-[#0d1b2a]/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
+            <div className="fixed inset-0 bg-[#0d1b2a]/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] no-print">
               <div className="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95">
                 <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl border border-[#ddd5c0]">
                   {dialog.type === 'confirm' ? '❓' : '⚠️'}
