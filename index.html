@@ -95,7 +95,6 @@
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
 
-      // SISTEM DIALOG CUSTOM (Mengganti alert & confirm bawaan browser yang diblokir)
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
 
       const showAlert = (message) => {
@@ -945,32 +944,32 @@
 
                         <div className="mt-8 text-[13px]">
                           <p className="text-right mb-2">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
-                          <div className="flex justify-between text-center mt-6">
-                            <div className="w-40 relative">
+                          <div className="flex justify-between text-center mt-4">
+                            <div className="w-40">
                               <p className="mb-1">Pemberi Kuasa,</p>
-                              <div className="h-14 flex items-center justify-center relative">
+                              <div className="h-16 flex items-center justify-center">
                                 {/* Tanda Tangan Digital Pemberi */}
                                 {searchResult.ttd_pemberi && (
-                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full mix-blend-multiply absolute z-10" />
+                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full object-contain mix-blend-multiply" />
                                 )}
                               </div>
-                              <p className="font-bold underline relative z-20">{searchResult.nama_pemberi}</p>
+                              <p className="font-bold underline">{searchResult.nama_pemberi}</p>
                             </div>
-                            <div className="w-40 relative">
+                            <div className="w-40">
                               <p className="mb-1">Ketua Pengurus,</p>
-                              <div className="h-14 flex items-center justify-center relative">
-                                {/* Tanda Tangan Ketua */}
-                                <img src="https://i.ibb.co.com/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="max-h-full mix-blend-multiply absolute z-10 scale-[1.3]" />
+                              <div className="h-16 flex items-center justify-center">
+                                {/* Tanda Tangan Ketua - Layout Standar */}
+                                <img src="https://i.ibb.co/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="max-h-full object-contain mix-blend-multiply" />
                               </div>
-                              <p className="font-bold underline relative z-20">Ageng Prasongko</p>
+                              <p className="font-bold underline">Ageng Prasongko</p>
                             </div>
-                            <div className="w-40 relative">
+                            <div className="w-40">
                               <p className="mb-1">Penerima Kuasa,</p>
-                              <div className="h-14 flex items-center justify-center relative">
+                              <div className="h-16 flex items-center justify-center">
                                 {/* Tanda Tangan Manager */}
-                                <img src="https://i.ibb.co.com/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="max-h-full mix-blend-multiply absolute z-10 scale-110" />
+                                <img src="https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="max-h-full object-contain mix-blend-multiply" />
                               </div>
-                              <p className="font-bold underline relative z-20">{searchResult.nama_penerima}</p>
+                              <p className="font-bold underline">{searchResult.nama_penerima}</p>
                             </div>
                           </div>
                         </div>
