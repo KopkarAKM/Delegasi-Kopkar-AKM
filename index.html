@@ -68,7 +68,7 @@
     const LockIcon = (p) => <Icon path={icons.Lock} {...p} />;
     const LogOutIcon = (p) => <Icon path={icons.LogOut} {...p} />;
 
-    // GANTI URL INI DENGAN URL DEPLOY GOOGLE APPS SCRIPT ANDA YANG BARU
+    // URL DEPLOY GOOGLE APPS SCRIPT TERBARU
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxwdxWnLdX_OnyXUSCeAGbzoQQGKeUCGQYn4jQBzcIVulkYQglzs-nvxXlv268m13Kv/exec';
 
     const App = () => {
@@ -113,14 +113,32 @@
         }));
       };
 
-      // FUNGSI KOMUNIKASI SATU ARAH (HANYA POST - Mencegah masalah keamanan browser)
+      // FUNGSI KOMUNIKASI "AUTO-FALLBACK" PINTAR
       const fetchGAS = async (payload) => {
-        const res = await fetch(GAS_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        return await res.json();
+        try {
+          // 1. Coba tarik data dengan metode POST
+          let res = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(payload)
+          });
+          let data = await res.json();
+
+          // 2. Jika Server merespons "Unknown POST action" / "Unknown GET action",
+          // Artinya server masih mengeksekusi versi script lama. 
+          // Kita otomatis melakukan Fallback memanggil data via parameter URL (GET).
+          if (data.status === 'error' && (data.message.includes('Unknown POST') || data.message.includes('Unknown GET'))) {
+            console.log("Terdeteksi GAS versi lama. Melakukan fallback otomatis ke metode URL GET...");
+            const query = new URLSearchParams(payload).toString();
+            const getRes = await fetch(`${GAS_URL}?${query}`, { method: 'GET' });
+            data = await getRes.json();
+          }
+
+          return data;
+        } catch (err) {
+          console.error("Kesalahan komunikasi fetch:", err);
+          throw err;
+        }
       };
 
       const handleSubmitForm = async () => {
@@ -178,9 +196,16 @@
         setIsLoadingList(true);
         try {
           const data = await fetchGAS({ action: 'getList', role: role });
-          setApprovalList(data.rows || []);
+          
+          // PENGECEKAN EKSPILISIT AGAR TIDAK GAGAL DIAM-DIAM
+          if (data.status === 'ok') {
+            setApprovalList(data.rows || []);
+          } else {
+            alert('Server merespons error: ' + data.message);
+            setApprovalList([]);
+          }
         } catch (e) {
-          alert('Gagal memuat daftar persetujuan.');
+          alert('Gagal memuat daftar persetujuan. Periksa koneksi internet Anda.');
         } finally {
           setIsLoadingList(false);
         }
@@ -203,7 +228,7 @@
             setCatatanApproval('');
             fetchApprovalList(approvalRole);
           } else {
-            alert('Sistem menolak tindakan. ' + data.message);
+            alert('Sistem menolak tindakan: ' + data.message);
           }
         } catch (e) {
           alert('Koneksi terputus saat mengirim persetujuan.');
@@ -232,12 +257,15 @@
         setSearchResult(null);
         try {
           const data = await fetchGAS({ action: 'getSurat', no: queryNo.toUpperCase() });
+          
           if (data.status === 'ok' && data.surat) {
             setSearchResult(data.surat);
           } else {
+            console.error("Pelacakan gagal:", data.message);
             setSearchError(true);
           }
         } catch (e) {
+          console.error("Fetch error:", e);
           setSearchError(true);
         } finally {
           setIsSearching(false);
