@@ -52,80 +52,35 @@
       LogOut: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
     };
 
-    const FileText    = (p) => <Icon path={icons.FileText}    {...p} />;
+    const FileText = (p) => <Icon path={icons.FileText} {...p} />;
     const CheckCircle = (p) => <Icon path={icons.CheckCircle} {...p} />;
-    const Clock       = (p) => <Icon path={icons.Clock}       {...p} />;
-    const Shield      = (p) => <Icon path={icons.Shield}      {...p} />;
-    const Printer     = (p) => <Icon path={icons.Printer}     {...p} />;
-    const XIcon       = (p) => <Icon path={icons.X}           {...p} />;
-    const ChevronRight= (p) => <Icon path={icons.ChevronRight}{...p} />;
+    const Clock = (p) => <Icon path={icons.Clock} {...p} />;
+    const Shield = (p) => <Icon path={icons.Shield} {...p} />;
+    const Printer = (p) => <Icon path={icons.Printer} {...p} />;
+    const XIcon = (p) => <Icon path={icons.X} {...p} />;
+    const ChevronRight = (p) => <Icon path={icons.ChevronRight} {...p} />;
     const ChevronLeft = (p) => <Icon path={icons.ChevronLeft} {...p} />;
     const CheckSquare = (p) => <Icon path={icons.CheckSquare} {...p} />;
-    const SquareIcon  = (p) => <Icon path={icons.Square}      {...p} />;
-    const CheckIcon   = (p) => <Icon path={icons.Check}       {...p} />;
-    const UserIcon    = (p) => <Icon path={icons.User}        {...p} />;
-    const SearchIcon  = (p) => <Icon path={icons.Search}      {...p} />;
-    const LockIcon    = (p) => <Icon path={icons.Lock}        {...p} />;
-    const LogOutIcon  = (p) => <Icon path={icons.LogOut}      {...p} />;
+    const SquareIcon = (p) => <Icon path={icons.Square} {...p} />;
+    const CheckIcon = (p) => <Icon path={icons.Check} {...p} />;
+    const UserIcon = (p) => <Icon path={icons.User} {...p} />;
+    const SearchIcon = (p) => <Icon path={icons.Search} {...p} />;
+    const LockIcon = (p) => <Icon path={icons.Lock} {...p} />;
+    const LogOutIcon = (p) => <Icon path={icons.LogOut} {...p} />;
 
-    // ─── URL GAS ────────────────────────────────────────────────
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzCWKnulEIpQ1gIwvwYmkvK6-riQmr96B2rSRYqRRo0MgEdOa_PJGvAHkxlPR7lr0IK/exec';
-
-    // ─────────────────────────────────────────────────────────────
-    // FIX #1: Pisahkan fetchGAS menjadi dua fungsi:
-    //   - fetchGAS_POST  → untuk submit & approve (doPost di GAS)
-    //   - fetchGAS_GET   → untuk getList & getSurat (doGet di GAS)
-    //
-    // Root cause: GAS memiliki doGet dan doPost sebagai entry point
-    // yang terpisah. Sebelumnya semua panggilan pakai POST, sehingga
-    // getList dan getSurat tidak pernah diproses oleh doGet.
-    // ─────────────────────────────────────────────────────────────
-
-    // Untuk action yang butuh menulis data (POST)
-    const fetchGAS_POST = async (payload) => {
-      const res = await fetch(GAS_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
-      return await res.json();
-    };
-
-    // Untuk action yang hanya membaca data (GET)
-    // FIX #2: Kirim parameter via query string, bukan body
-    const fetchGAS_GET = async (params) => {
-      const qs = new URLSearchParams(params).toString();
-      const res = await fetch(`${GAS_URL}?${qs}`, { method: 'GET' });
-      return await res.json();
-    };
-
-    // ─────────────────────────────────────────────────────────────
-    // FIX #3: Helper tanggal yang aman — tidak crash jika string kosong
-    // ─────────────────────────────────────────────────────────────
-    const formatDateId = (dStr) => {
-      if (!dStr || dStr === '') return '-';
-      // Ambil hanya bagian tanggal jika ada komponen waktu (e.g. ISO string)
-      const dateOnly = String(dStr).split('T')[0];
-      const dateObj = new Date(dateOnly + 'T00:00:00'); // force local parse
-      if (isNaN(dateObj.getTime())) return dStr;
-      const d = dateObj.getDate();
-      const m = dateObj.getMonth();
-      const y = dateObj.getFullYear();
-      const bln = ['Januari','Februari','Maret','April','Mei','Juni',
-                   'Juli','Agustus','September','Oktober','November','Desember'];
-      return `${d} ${bln[m]} ${y}`;
-    };
+    // GANTI URL INI DENGAN URL DEPLOY GOOGLE APPS SCRIPT ANDA YANG BARU
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxwdxWnLdX_OnyXUSCeAGbzoQQGKeUCGQYn4jQBzcIVulkYQglzs-nvxXlv268m13Kv/exec';
 
     const App = () => {
       const params = new URLSearchParams(window.location.search);
       const initialView = params.get('view') || 'form';
-      const initialNo   = params.get('no')   || '';
+      const initialNo = params.get('no') || '';
 
-      const [appView,       setAppView]       = useState(initialView);
-      const [formStep,      setFormStep]      = useState(1);
-      const [isSubmitting,  setIsSubmitting]  = useState(false);
+      const [appView, setAppView] = useState(initialView);
+      const [formStep, setFormStep] = useState(1);
+      const [isSubmitting, setIsSubmitting] = useState(false);
       const [submitSuccess, setSubmitSuccess] = useState(null);
-      const [formData,      setFormData]      = useState({
+      const [formData, setFormData] = useState({
         nama_pemberi: '', jabatan_pemberi: '', hp_pemberi: '', email_pemberi: '', alasan: '',
         berlaku_mulai: '', berlaku_sampai: '',
         nama_penerima: '', jabatan_penerima: '', hp_penerima: '',
@@ -133,13 +88,13 @@
       });
 
       const wewenangOptions = [
-        'Pencairan Dana', 'Penandatanganan Dokumen',
-        'Urusan Perbankan', 'Mewakili Rapat',
+        'Pencairan Dana', 'Penandatanganan Dokumen', 
+        'Urusan Perbankan', 'Mewakili Rapat', 
         'Korespondensi Resmi', 'Lainnya'
       ];
 
       useEffect(() => {
-        const today    = new Date();
+        const today = new Date();
         const nextWeek = new Date(today);
         nextWeek.setDate(today.getDate() + 7);
         setFormData(prev => ({
@@ -152,13 +107,22 @@
       const toggleWewenang = (w) => {
         setFormData(prev => ({
           ...prev,
-          wewenang: prev.wewenang.includes(w)
-            ? prev.wewenang.filter(item => item !== w)
+          wewenang: prev.wewenang.includes(w) 
+            ? prev.wewenang.filter(item => item !== w) 
             : [...prev.wewenang, w]
         }));
       };
 
-      // ── SUBMIT FORM ──────────────────────────────────────────
+      // FUNGSI KOMUNIKASI SATU ARAH (HANYA POST - Mencegah masalah keamanan browser)
+      const fetchGAS = async (payload) => {
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload)
+        });
+        return await res.json();
+      };
+
       const handleSubmitForm = async () => {
         setIsSubmitting(true);
         try {
@@ -167,13 +131,12 @@
             ...formData,
             wewenang: formData.wewenang.join(', ')
           };
-          // submitSuratKuasa → doPost → pakai POST ✓
-          const data = await fetchGAS_POST(payload);
+          const data = await fetchGAS(payload);
           if (data.status === 'ok') {
             setSubmitSuccess(data.nomorSurat);
             setFormStep(4);
           } else {
-            alert('Gagal mengirim data. ' + (data.message || ''));
+            alert('Gagal mengirim data. ' + data.message);
           }
         } catch (e) {
           alert('Koneksi terputus. Pastikan perangkat Anda terhubung ke internet.');
@@ -183,25 +146,23 @@
       };
 
       const resetForm = () => {
-        setFormData(prev => ({
-          ...prev,
+        setFormData({
+          ...formData,
           nama_pemberi: '', jabatan_pemberi: '', hp_pemberi: '', email_pemberi: '', alasan: '',
           nama_penerima: '', jabatan_penerima: '', hp_penerima: '', wewenang: [], keterangan_wewenang: ''
-        }));
+        });
         setSubmitSuccess(null);
         setFormStep(1);
       };
 
-      // ── PORTAL PERSETUJUAN ───────────────────────────────────
-      const [approvalRole,    setApprovalRole]    = useState('');
-      const [approvalPin,     setApprovalPin]     = useState('');
-      const [isLoggedIn,      setIsLoggedIn]      = useState(false);
-      const [approvalList,    setApprovalList]    = useState([]);
-      const [isLoadingList,   setIsLoadingList]   = useState(false);
-      const [selectedSurat,   setSelectedSurat]   = useState(null);
+      // PORTAL PERSETUJUAN
+      const [approvalRole, setApprovalRole] = useState('');
+      const [approvalPin, setApprovalPin] = useState('');
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [approvalList, setApprovalList] = useState([]);
+      const [isLoadingList, setIsLoadingList] = useState(false);
+      const [selectedSurat, setSelectedSurat] = useState(null);
       const [catatanApproval, setCatatanApproval] = useState('');
-
-      // FIX #4: PIN disimpan di variabel JS saja (tidak di-hardcode di JSX)
       const PINS = { Ketua: '1234', Manager: '5678' };
 
       const handleLogin = () => {
@@ -213,26 +174,23 @@
         fetchApprovalList(approvalRole);
       };
 
-      // FIX #5: fetchApprovalList → pakai GET bukan POST
       const fetchApprovalList = async (role) => {
         setIsLoadingList(true);
         try {
-          // getList → doGet → pakai GET ✓
-          const data = await fetchGAS_GET({ action: 'getList', role });
+          const data = await fetchGAS({ action: 'getList', role: role });
           setApprovalList(data.rows || []);
         } catch (e) {
-          alert('Gagal memuat daftar persetujuan. Periksa koneksi atau URL GAS.');
+          alert('Gagal memuat daftar persetujuan.');
         } finally {
           setIsLoadingList(false);
         }
       };
 
       const handleApprove = async (nomorSurat, decision) => {
-        if (!window.confirm(`Proses tindakan "${decision === 'setuju' ? 'SETUJU' : 'TOLAK'}" untuk dokumen ${nomorSurat}?`)) return;
+        if (!window.confirm(`Proses tindakan ini untuk dokumen ${nomorSurat}?`)) return;
         setIsLoadingList(true);
         try {
-          // approve → doPost → pakai POST ✓
-          const data = await fetchGAS_POST({
+          const data = await fetchGAS({
             action: 'approve',
             nomorSurat,
             role: approvalRole,
@@ -245,7 +203,7 @@
             setCatatanApproval('');
             fetchApprovalList(approvalRole);
           } else {
-            alert('Sistem menolak tindakan. ' + (data.message || ''));
+            alert('Sistem menolak tindakan. ' + data.message);
           }
         } catch (e) {
           alert('Koneksi terputus saat mengirim persetujuan.');
@@ -255,27 +213,25 @@
       };
 
       const needsMyApproval = (row) => {
-        if (approvalRole === 'Ketua')   return row.status === 'Menunggu Ketua';
+        if (approvalRole === 'Ketua') return row.status === 'Menunggu Ketua';
         if (approvalRole === 'Manager') return row.status === 'Menunggu Manager';
         return false;
       };
 
-      // ── CEK & CETAK ──────────────────────────────────────────
-      const [searchNo,     setSearchNo]     = useState(initialNo);
+      // CEK DAN CETAK
+      const [searchNo, setSearchNo] = useState(initialNo);
       const [searchResult, setSearchResult] = useState(null);
-      const [isSearching,  setIsSearching]  = useState(false);
-      const [searchError,  setSearchError]  = useState(false);
+      const [isSearching, setIsSearching] = useState(false);
+      const [searchError, setSearchError] = useState(false);
 
-      // FIX #6: handleSearch → pakai GET bukan POST
       const handleSearch = async (overrideNo) => {
-        const queryNo = (typeof overrideNo === 'string' ? overrideNo : searchNo).trim().toUpperCase();
+        const queryNo = typeof overrideNo === 'string' ? overrideNo.trim() : searchNo.trim();
         if (!queryNo) return;
         setIsSearching(true);
         setSearchError(false);
         setSearchResult(null);
         try {
-          // getSurat → doGet → pakai GET ✓
-          const data = await fetchGAS_GET({ action: 'getSurat', no: queryNo });
+          const data = await fetchGAS({ action: 'getSurat', no: queryNo.toUpperCase() });
           if (data.status === 'ok' && data.surat) {
             setSearchResult(data.surat);
           } else {
@@ -288,62 +244,65 @@
         }
       };
 
-      // Auto-search jika ada query param ?no=...
       useEffect(() => {
-        if ((initialView === 'cetak' || appView === 'cetak') && initialNo) {
+        if (initialView === 'cetak' && initialNo) {
           handleSearch(initialNo);
         }
       }, []);
 
+      const formatDateId = (dStr) => {
+        if (!dStr) return '-';
+        const dateObj = new Date(dStr);
+        if (!isNaN(dateObj)) {
+          const d = dateObj.getDate();
+          const m = dateObj.getMonth();
+          const y = dateObj.getFullYear();
+          const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+          return `${d} ${bln[m]} ${y}`;
+        }
+        return dStr;
+      };
+
       return (
         <div className="min-h-screen flex flex-col">
-
-          {/* ── HEADER ─────────────────────────────────────────── */}
           <header className="bg-[#0d1b2a] relative overflow-hidden no-print">
             <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-[#c9a84c] opacity-10 blur-3xl pointer-events-none"></div>
             <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4 relative z-10">
               <div className="flex items-center gap-4 w-full md:w-auto">
-                <div className="w-12 h-12 bg-[#c9a84c] rounded-xl flex items-center justify-center font-playfair text-xl font-bold text-[#0d1b2a]">KA</div>
+                <div className="w-12 h-12 bg-[#c9a84c] rounded-xl flex items-center justify-center font-playfair text-xl font-bold text-[#0d1b2a]">
+                  KA
+                </div>
                 <div>
                   <h1 className="font-playfair text-lg text-white tracking-wide leading-tight">e-Surat Kuasa Digital</h1>
                   <p className="text-[11px] text-white/60 mt-0.5">Koperasi Karyawan Adaro Karya Mandiri</p>
                 </div>
               </div>
               <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                {['form','approval','cetak'].map((v, i) => (
-                  <button key={v} onClick={() => setAppView(v)}
-                    className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
-                      appView === v ? 'bg-[#c9a84c] text-[#0d1b2a]' : 'border border-[#c9a84c]/40 text-[#e4c475] hover:bg-[#c9a84c]/10'
-                    }`}>
-                    {['Buat Surat','Persetujuan','Cek & Cetak'][i]}
-                  </button>
-                ))}
+                <button onClick={() => setAppView('form')} className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${appView === 'form' ? 'bg-[#c9a84c] text-[#0d1b2a]' : 'border border-[#c9a84c]/40 text-[#e4c475] hover:bg-[#c9a84c]/10'}`}>Buat Surat</button>
+                <button onClick={() => setAppView('approval')} className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${appView === 'approval' ? 'bg-[#c9a84c] text-[#0d1b2a]' : 'border border-[#c9a84c]/40 text-[#e4c475] hover:bg-[#c9a84c]/10'}`}>Persetujuan</button>
+                <button onClick={() => setAppView('cetak')} className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${appView === 'cetak' ? 'bg-[#c9a84c] text-[#0d1b2a]' : 'border border-[#c9a84c]/40 text-[#e4c475] hover:bg-[#c9a84c]/10'}`}>Cek & Cetak</button>
               </div>
             </div>
           </header>
 
           <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 no-print flex-grow">
-
-            {/* ── VIEW: FORM PENGAJUAN ──────────────────────────── */}
+            
+            {/* VIEW FORM PENGAJUAN */}
             {appView === 'form' && (
-              <div>
+              <div className="animate-in fade-in duration-500">
                 {formStep < 4 && (
                   <div className="mb-8">
                     <h2 className="font-playfair text-2xl text-[#0d1b2a] mb-2">Formulir Pengajuan Surat Kuasa</h2>
                     <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-2">
-                      {[1,2,3].map((step) => (
+                      {[1, 2, 3].map((step) => (
                         <React.Fragment key={step}>
-                          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
-                            formStep === step ? 'bg-[#0d1b2a] text-[#c9a84c]'
-                            : formStep > step ? 'bg-[#c9a84c] text-[#0d1b2a]'
-                            : 'bg-white border border-[#ddd5c0] text-slate-400'}`}>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                              formStep === step ? 'bg-[#c9a84c]/20' : formStep > step ? 'bg-[#0d1b2a]/20' : 'bg-slate-100'}`}>
+                          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${formStep === step ? 'bg-[#0d1b2a] text-[#c9a84c]' : formStep > step ? 'bg-[#c9a84c] text-[#0d1b2a]' : 'bg-white border border-[#ddd5c0] text-slate-400'}`}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${formStep === step ? 'bg-[#c9a84c]/20' : formStep > step ? 'bg-[#0d1b2a]/20' : 'bg-slate-100'}`}>
                               {formStep > step ? <CheckIcon size={12} /> : step}
                             </div>
                             {step === 1 ? 'Data Pemberi' : step === 2 ? 'Penerima & Wewenang' : 'Review & Kirim'}
                           </div>
-                          {step < 3 && <div className={`w-8 h-[2px] flex-shrink-0 ${formStep > step ? 'bg-[#c9a84c]' : 'bg-[#ddd5c0]'}`}></div>}
+                          {step < 3 && <div className={`w-8 h-[2px] ${formStep > step ? 'bg-[#c9a84c]' : 'bg-[#ddd5c0]'}`}></div>}
                         </React.Fragment>
                       ))}
                     </div>
@@ -351,8 +310,6 @@
                 )}
 
                 <div className="bg-white rounded-2xl border border-[#ddd5c0] shadow-sm p-6 sm:p-8">
-
-                  {/* Step 1 */}
                   {formStep === 1 && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-3 mb-4 border-b border-[#ddd5c0] pb-3">
@@ -405,7 +362,6 @@
                     </div>
                   )}
 
-                  {/* Step 2 */}
                   {formStep === 2 && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-3 mb-4 border-b border-[#ddd5c0] pb-3">
@@ -436,13 +392,8 @@
                         <label className="block text-xs font-bold text-[#0d1b2a] uppercase tracking-wider mb-3">Pilih Wewenang *</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {wewenangOptions.map((w, idx) => (
-                            <div key={idx} onClick={() => toggleWewenang(w)} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${
-                              formData.wewenang.includes(w)
-                                ? 'border-[#c9a84c] bg-[#f5e6c0]/40 text-[#0d1b2a]'
-                                : 'border-[#ddd5c0] hover:border-[#c9a84c]/50 text-slate-600'}`}>
-                              {formData.wewenang.includes(w)
-                                ? <CheckSquare size={18} className="text-[#c9a84c]" />
-                                : <SquareIcon  size={18} className="text-slate-300" />}
+                            <div key={idx} onClick={() => toggleWewenang(w)} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${formData.wewenang.includes(w) ? 'border-[#c9a84c] bg-[#f5e6c0]/40 text-[#0d1b2a]' : 'border-[#ddd5c0] hover:border-[#c9a84c]/50 text-slate-600'}`}>
+                              {formData.wewenang.includes(w) ? <CheckSquare size={18} className="text-[#c9a84c]" /> : <SquareIcon size={18} className="text-slate-300" />}
                               <span className="text-sm font-medium">{w}</span>
                             </div>
                           ))}
@@ -463,7 +414,6 @@
                     </div>
                   )}
 
-                  {/* Step 3 */}
                   {formStep === 3 && (
                     <div className="space-y-6">
                       <div className="flex items-center gap-3 mb-2 border-b border-[#ddd5c0] pb-3">
@@ -488,9 +438,7 @@
                         <div>
                           <p className="text-[10px] uppercase text-slate-500 font-bold mb-2">Wewenang</p>
                           <div className="flex flex-wrap gap-2">
-                            {formData.wewenang.map((w, i) => (
-                              <span key={i} className="bg-[#f5e6c0] border border-[#c9a84c] text-[10px] font-bold px-2 py-1 rounded-full text-[#0d1b2a]">{w}</span>
-                            ))}
+                            {formData.wewenang.map((w, i) => <span key={i} className="bg-[#f5e6c0] border border-[#c9a84c] text-[10px] font-bold px-2 py-1 rounded-full text-[#0d1b2a]">{w}</span>)}
                           </div>
                         </div>
                       </div>
@@ -509,9 +457,8 @@
                     </div>
                   )}
 
-                  {/* Step 4 — Sukses */}
                   {formStep === 4 && (
-                    <div className="text-center py-10 space-y-4">
+                    <div className="text-center py-10 space-y-4 animate-in zoom-in-95">
                       <div className="w-20 h-20 bg-gradient-to-br from-[#c9a84c] to-[#e4c475] rounded-full mx-auto flex items-center justify-center text-white shadow-lg mb-6">
                         <CheckIcon size={40} />
                       </div>
@@ -525,14 +472,13 @@
                       </div>
                     </div>
                   )}
-
                 </div>
               </div>
             )}
 
-            {/* ── VIEW: PORTAL PERSETUJUAN ──────────────────────── */}
+            {/* VIEW PORTAL PERSETUJUAN */}
             {appView === 'approval' && (
-              <div>
+              <div className="animate-in fade-in duration-500">
                 {!isLoggedIn ? (
                   <div className="max-w-md mx-auto mt-10 bg-white rounded-3xl p-8 border border-[#ddd5c0] shadow-sm text-center">
                     <LockIcon className="mx-auto text-[#0d1b2a] mb-4" size={32} />
@@ -543,15 +489,7 @@
                       <option value="Ketua">Ketua Koperasi</option>
                       <option value="Manager">Manager KOPKAR</option>
                     </select>
-                    <input
-                      type="password"
-                      placeholder="••••••"
-                      maxLength="6"
-                      value={approvalPin}
-                      onChange={e => setApprovalPin(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
-                      className="w-full px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center tracking-widest text-xl mb-6"
-                    />
+                    <input type="password" placeholder="••••••" maxLength="6" value={approvalPin} onChange={e => setApprovalPin(e.target.value)} className="w-full px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center tracking-widest text-xl mb-6" />
                     <button onClick={handleLogin} className="w-full bg-[#0d1b2a] text-[#c9a84c] font-bold py-3 rounded-xl shadow-md hover:bg-[#1a365d] transition-colors">Masuk Sistem</button>
                   </div>
                 ) : (
@@ -561,61 +499,58 @@
                         <h2 className="font-playfair text-2xl text-[#0d1b2a]">Dashboard {approvalRole}</h2>
                         <p className="text-sm text-slate-500 mt-1">Daftar lengkap surat kuasa di sistem KOPKAR AKM.</p>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => fetchApprovalList(approvalRole)} className="flex items-center gap-2 text-xs font-bold text-[#0d1b2a] hover:text-[#c9a84c] bg-slate-100 px-3 py-2 rounded-lg border border-slate-200 transition-colors">🔄 Refresh</button>
-                        <button onClick={() => { setIsLoggedIn(false); setApprovalPin(''); }} className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-100 transition-colors">
-                          <LogOutIcon size={14} /> Keluar
-                        </button>
-                      </div>
+                      <button onClick={() => { setIsLoggedIn(false); setApprovalPin(''); }} className="flex items-center gap-2 text-xs font-bold text-red-500 hover:text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-100 transition-colors"><LogOutIcon size={14}/> Keluar</button>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { val: approvalList.filter(r => needsMyApproval(r)).length, label: 'Butuh Proses', color: 'text-[#c9a84c]' },
-                        { val: approvalList.filter(r => r.status === 'Disetujui').length, label: 'Selesai', color: 'text-[#1a6b4a]' },
-                        { val: approvalList.filter(r => r.status === 'Ditolak').length, label: 'Ditolak', color: 'text-[#c0392b]' },
-                        { val: approvalList.length, label: 'Total Surat', color: 'text-[#0d1b2a]' },
-                      ].map((s, i) => (
-                        <div key={i} className="bg-white rounded-xl p-5 border border-[#ddd5c0]">
-                          <div className={`font-playfair text-2xl mb-1 ${s.color}`}>{s.val}</div>
-                          <div className="text-xs text-slate-500 font-bold uppercase">{s.label}</div>
-                        </div>
-                      ))}
+                      <div className="bg-white rounded-xl p-5 border border-[#ddd5c0]">
+                        <div className="font-playfair text-2xl text-[#c9a84c] mb-1">{approvalList.filter(r => needsMyApproval(r)).length}</div>
+                        <div className="text-xs text-slate-500 font-bold uppercase">Butuh Proses</div>
+                      </div>
+                      <div className="bg-white rounded-xl p-5 border border-[#ddd5c0]">
+                        <div className="font-playfair text-2xl text-[#1a6b4a] mb-1">{approvalList.filter(r => r.status === 'Disetujui').length}</div>
+                        <div className="text-xs text-slate-500 font-bold uppercase">Selesai</div>
+                      </div>
+                      <div className="bg-white rounded-xl p-5 border border-[#ddd5c0]">
+                        <div className="font-playfair text-2xl text-[#c0392b] mb-1">{approvalList.filter(r => r.status === 'Ditolak').length}</div>
+                        <div className="text-xs text-slate-500 font-bold uppercase">Ditolak</div>
+                      </div>
+                      <div className="bg-white rounded-xl p-5 border border-[#ddd5c0]">
+                        <div className="font-playfair text-2xl text-[#0d1b2a] mb-1">{approvalList.length}</div>
+                        <div className="text-xs text-slate-500 font-bold uppercase">Total Surat</div>
+                      </div>
                     </div>
 
                     <div className="bg-white rounded-2xl border border-[#ddd5c0] overflow-hidden shadow-sm">
                       <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm">
+                        <table className="w-full text-left text-sm whitespace-nowrap md:whitespace-normal">
                           <thead>
                             <tr className="bg-slate-50 border-b border-[#ddd5c0] text-[10px] uppercase tracking-wider text-slate-500">
-                              <th className="px-5 py-3 font-bold whitespace-nowrap">No. Surat</th>
-                              <th className="px-5 py-3 font-bold whitespace-nowrap">Pemberi</th>
-                              <th className="px-5 py-3 font-bold whitespace-nowrap">Penerima</th>
-                              <th className="px-5 py-3 font-bold whitespace-nowrap">Status</th>
-                              <th className="px-5 py-3 font-bold text-right whitespace-nowrap">Aksi</th>
+                              <th className="px-5 py-3 font-bold">No. Surat</th>
+                              <th className="px-5 py-3 font-bold">Pemberi</th>
+                              <th className="px-5 py-3 font-bold">Penerima</th>
+                              <th className="px-5 py-3 font-bold">Status</th>
+                              <th className="px-5 py-3 font-bold text-right">Aksi</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[#ddd5c0]">
                             {isLoadingList ? (
-                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Membaca basis data…</td></tr>
+                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Membaca basis data...</td></tr>
                             ) : approvalList.length === 0 ? (
-                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Tidak ada surat kuasa.</td></tr>
+                              <tr><td colSpan="5" className="text-center py-10 text-slate-500">Data bersih. Tidak ada surat.</td></tr>
                             ) : (
                               approvalList.map(row => (
                                 <tr key={row.nomorSurat} className="hover:bg-slate-50">
-                                  <td className="px-5 py-4 font-mono font-bold text-[#0d1b2a] whitespace-nowrap">{row.nomorSurat}</td>
+                                  <td className="px-5 py-4 font-mono font-bold text-[#0d1b2a]">{row.nomorSurat}</td>
                                   <td className="px-5 py-4">{row.nama_pemberi}</td>
                                   <td className="px-5 py-4">{row.nama_penerima}</td>
                                   <td className="px-5 py-4">
-                                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase whitespace-nowrap ${
-                                      row.status.includes('Menunggu') ? 'bg-[#fff8ec] text-[#b06c00]'
-                                      : row.status === 'Disetujui'   ? 'bg-[#eaf5ef] text-[#1a6b4a]'
-                                      : 'bg-[#fdf0ee] text-[#c0392b]'}`}>
+                                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${row.status.includes('Menunggu') ? 'bg-[#fff8ec] text-[#b06c00]' : row.status === 'Disetujui' ? 'bg-[#eaf5ef] text-[#1a6b4a]' : 'bg-[#fdf0ee] text-[#c0392b]'}`}>
                                       {row.status}
                                     </span>
                                   </td>
                                   <td className="px-5 py-4 text-right">
-                                    <button onClick={() => { setSelectedSurat(row); setCatatanApproval(''); }} className="text-xs bg-slate-100 hover:bg-slate-200 text-[#0d1b2a] px-3 py-1.5 rounded-lg font-bold transition-colors">Tinjau</button>
+                                    <button onClick={() => setSelectedSurat(row)} className="text-xs bg-slate-100 hover:bg-slate-200 text-[#0d1b2a] px-3 py-1.5 rounded-lg font-bold transition-colors">Tinjau</button>
                                   </td>
                                 </tr>
                               ))
@@ -625,34 +560,22 @@
                       </div>
                     </div>
 
-                    {/* Modal Detail */}
                     {selectedSurat && (
                       <div className="fixed inset-0 bg-[#0d1b2a]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                          <h3 className="font-playfair text-xl text-[#0d1b2a] mb-4 border-b pb-2">
-                            Tinjauan Surat {selectedSurat.nomorSurat}
-                          </h3>
+                          <h3 className="font-playfair text-xl text-[#0d1b2a] mb-4 border-b pb-2">Tinjauan Surat {selectedSurat.nomorSurat}</h3>
                           <div className="space-y-3 text-sm mb-6">
-                            {[
-                              ['Pemberi',      selectedSurat.nama_pemberi],
-                              ['Jabatan',      selectedSurat.jabatan_pemberi],
-                              ['Penerima',     selectedSurat.nama_penerima],
-                              ['Jabatan',      selectedSurat.jabatan_penerima],
-                              ['Masa Berlaku', `${formatDateId(selectedSurat.berlaku_mulai)} – ${formatDateId(selectedSurat.berlaku_sampai)}`],
-                              ['Alasan',       selectedSurat.alasan],
-                              ['Wewenang',     selectedSurat.wewenang],
-                            ].map(([k, v], i) => (
-                              <div key={i} className="grid grid-cols-3 gap-2">
-                                <span className="text-slate-500">{k}</span>
-                                <span className="col-span-2 font-medium">{v}</span>
-                              </div>
-                            ))}
+                            <div className="grid grid-cols-3"><span className="text-slate-500">Pemberi</span><span className="col-span-2 font-bold">{selectedSurat.nama_pemberi}</span></div>
+                            <div className="grid grid-cols-3"><span className="text-slate-500">Penerima</span><span className="col-span-2 font-bold">{selectedSurat.nama_penerima}</span></div>
+                            <div className="grid grid-cols-3"><span className="text-slate-500">Masa Berlaku</span><span className="col-span-2">{formatDateId(selectedSurat.berlaku_mulai)} - {formatDateId(selectedSurat.berlaku_sampai)}</span></div>
+                            <div className="grid grid-cols-3"><span className="text-slate-500">Alasan</span><span className="col-span-2">{selectedSurat.alasan}</span></div>
+                            <div className="grid grid-cols-3"><span className="text-slate-500">Wewenang</span><span className="col-span-2">{selectedSurat.wewenang}</span></div>
                           </div>
 
                           {needsMyApproval(selectedSurat) && (
                             <div className="mb-6">
-                              <label className="block text-xs font-bold text-[#0d1b2a] mb-2 uppercase tracking-wider">Catatan Opsional</label>
-                              <textarea value={catatanApproval} onChange={e => setCatatanApproval(e.target.value)} className="w-full p-3 rounded-lg border border-[#ddd5c0] text-sm outline-none focus:border-[#c9a84c] resize-none h-20" placeholder="Tambahkan catatan jika diperlukan..."></textarea>
+                              <label className="block text-xs font-bold text-[#0d1b2a] mb-2">Sisipkan Catatan Opsional</label>
+                              <textarea value={catatanApproval} onChange={e => setCatatanApproval(e.target.value)} className="w-full p-3 rounded-lg border border-[#ddd5c0] text-sm outline-none focus:border-[#c9a84c]"></textarea>
                             </div>
                           )}
 
@@ -660,8 +583,8 @@
                             <button onClick={() => setSelectedSurat(null)} className="px-4 py-2 text-sm border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">Tutup</button>
                             {needsMyApproval(selectedSurat) && (
                               <>
-                                <button onClick={() => handleApprove(selectedSurat.nomorSurat, 'tolak')} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors">✗ Tolak</button>
-                                <button onClick={() => handleApprove(selectedSurat.nomorSurat, 'setuju')} className="px-4 py-2 text-sm bg-[#1a6b4a] hover:bg-[#14553a] text-white font-bold rounded-lg transition-colors">✓ Setujui</button>
+                                <button onClick={() => handleApprove(selectedSurat.nomorSurat, 'tolak')} className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors">Tolak Permintaan</button>
+                                <button onClick={() => handleApprove(selectedSurat.nomorSurat, 'setuju')} className="px-4 py-2 text-sm bg-[#1a6b4a] hover:bg-[#14553a] text-white font-bold rounded-lg transition-colors">Setujui Permintaan</button>
                               </>
                             )}
                           </div>
@@ -673,23 +596,16 @@
               </div>
             )}
 
-            {/* ── VIEW: CEK & CETAK ─────────────────────────────── */}
+            {/* VIEW CEK & CETAK */}
             {appView === 'cetak' && (
-              <div>
+              <div className="animate-in fade-in duration-500">
                 <div className="bg-white rounded-2xl p-8 border border-[#ddd5c0] shadow-sm text-center mb-6 no-print">
                   <h2 className="font-playfair text-2xl text-[#0d1b2a] mb-2">Pelacakan Dokumen</h2>
                   <p className="text-sm text-slate-500 mb-6">Gunakan nomor referensi untuk melacak atau mencetak surat kuasa.</p>
                   <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-                    <input
-                      type="text"
-                      value={searchNo}
-                      onChange={e => setSearchNo(e.target.value.toUpperCase())}
-                      onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-                      placeholder="Contoh: SK-2026-001"
-                      className="flex-1 px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center sm:text-left uppercase"
-                    />
-                    <button onClick={() => handleSearch()} disabled={isSearching} className="bg-[#c9a84c] text-[#0d1b2a] font-bold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-[#b59542] transition-colors">
-                      <SearchIcon size={18} /> {isSearching ? 'Mencari...' : 'Lacak'}
+                    <input type="text" value={searchNo} onChange={e => setSearchNo(e.target.value)} placeholder="Contoh: SK-2026-001" className="flex-1 px-4 py-3 rounded-xl border border-[#ddd5c0] focus:border-[#c9a84c] outline-none font-mono text-center sm:text-left" />
+                    <button onClick={handleSearch} disabled={isSearching} className="bg-[#c9a84c] text-[#0d1b2a] font-bold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-[#b59542] transition-colors">
+                      <SearchIcon size={18} /> Lacak
                     </button>
                   </div>
                 </div>
@@ -697,17 +613,14 @@
                 {searchError && (
                   <div className="bg-red-50 text-red-600 p-6 rounded-2xl text-center border border-red-100 no-print">
                     <p className="font-bold">Sistem tidak menemukan nomor tersebut.</p>
-                    <p className="text-sm mt-1">Periksa kembali penulisan nomor referensi.</p>
+                    <p className="text-sm">Periksa kembali penulisan nomor referensi.</p>
                   </div>
                 )}
 
                 {searchResult && (
                   <div className="bg-white rounded-2xl border border-[#ddd5c0] shadow-sm overflow-hidden mb-10 no-print">
-                    <div className={`p-6 border-b-4 ${
-                      searchResult.status === 'Disetujui' ? 'border-[#1a6b4a] bg-[#eaf5ef]'
-                      : searchResult.status === 'Ditolak' ? 'border-[#c0392b] bg-[#fdf0ee]'
-                      : 'border-[#b06c00] bg-[#fff8ec]'}`}>
-                      <h3 className="font-playfair text-xl text-[#0d1b2a] mb-1">Status: {searchResult.status}</h3>
+                    <div className={`p-6 border-b-4 ${searchResult.status === 'Disetujui' ? 'border-[#1a6b4a] bg-[#eaf5ef]' : searchResult.status === 'Ditolak' ? 'border-[#c0392b] bg-[#fdf0ee]' : 'border-[#b06c00] bg-[#fff8ec]'}`}>
+                      <h3 className="font-playfair text-xl text-[#0d1b2a] mb-1">Status Dokumen: {searchResult.status}</h3>
                       <p className="font-mono text-sm font-bold opacity-70">No: {searchResult.nomorSurat}</p>
                     </div>
                     <div className="p-6">
@@ -715,49 +628,30 @@
                         <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Pemberi</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_pemberi}</span></div>
                         <div><span className="block text-[10px] uppercase text-slate-500 font-bold">Penerima</span><span className="font-bold text-[#0d1b2a]">{searchResult.nama_penerima}</span></div>
                         <div className="col-span-2"><span className="block text-[10px] uppercase text-slate-500 font-bold">Wewenang</span><span>{searchResult.wewenang}</span></div>
-                        <div className="col-span-2"><span className="block text-[10px] uppercase text-slate-500 font-bold">Masa Berlaku</span><span>{formatDateId(searchResult.berlaku_mulai)} — {formatDateId(searchResult.berlaku_sampai)}</span></div>
                       </div>
 
                       <div className="space-y-4">
+                        <div className="flex items-center gap-3"><CheckCircle size={16} className="text-[#1a6b4a]" /><span className="text-sm">Pengajuan Berhasil ({formatDateId(searchResult.tgl_submit)})</span></div>
                         <div className="flex items-center gap-3">
-                          <CheckCircle size={16} className="text-[#1a6b4a] flex-shrink-0" />
-                          <span className="text-sm">Pengajuan berhasil ({formatDateId(searchResult.tgl_submit)})</span>
+                          {searchResult.status_ketua === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_ketua === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
+                          <span className="text-sm">Respons Ketua {searchResult.catatan_ketua && <span className="text-slate-500 italic">"{searchResult.catatan_ketua}"</span>}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          {searchResult.status_ketua === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a] flex-shrink-0" />
-                            : searchResult.status_ketua === 'Tolak' ? <XIcon size={16} className="text-red-600 flex-shrink-0" />
-                            : <Clock size={16} className="text-slate-400 flex-shrink-0" />}
-                          <span className="text-sm">
-                            Respons Ketua: <span className="font-semibold">{searchResult.status_ketua || 'Menunggu'}</span>
-                            {searchResult.catatan_ketua && <span className="text-slate-500 italic"> — "{searchResult.catatan_ketua}"</span>}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {searchResult.status_manager === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a] flex-shrink-0" />
-                            : searchResult.status_manager === 'Tolak' ? <XIcon size={16} className="text-red-600 flex-shrink-0" />
-                            : <Clock size={16} className="text-slate-400 flex-shrink-0" />}
-                          <span className="text-sm">
-                            Respons Manager: <span className="font-semibold">{searchResult.status_manager || 'Menunggu'}</span>
-                            {searchResult.catatan_manager && <span className="text-slate-500 italic"> — "{searchResult.catatan_manager}"</span>}
-                          </span>
+                          {searchResult.status_manager === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_manager === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
+                          <span className="text-sm">Respons Manager {searchResult.catatan_manager && <span className="text-slate-500 italic">"{searchResult.catatan_manager}"</span>}</span>
                         </div>
                       </div>
 
                       <div className="mt-8">
-                        <button
-                          onClick={() => window.print()}
-                          disabled={searchResult.status !== 'Disetujui'}
-                          className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#1a365d] transition-colors"
-                        >
-                          <Printer size={18} />
-                          {searchResult.status === 'Disetujui' ? 'Cetak Salinan PDF' : 'Surat Belum Disetujui Sepenuhnya'}
+                        <button onClick={() => window.print()} disabled={searchResult.status !== 'Disetujui'} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-[#1a365d] transition-colors">
+                          <Printer size={18} /> Cetak Salinan PDF
                         </button>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* AREA CETAK — hanya tampil saat print */}
+                {/* TAMPILAN CETAK PDF */}
                 {searchResult && searchResult.status === 'Disetujui' && (
                   <div id="print-area" className="hidden print-only text-black bg-white min-h-[1050px] p-10 font-serif text-sm">
                     <div className="flex items-start gap-5 border-b-[3px] border-double border-black pb-4 mb-6">
@@ -777,21 +671,19 @@
                     <div className="leading-relaxed space-y-3">
                       <p>Pihak yang bertanda tangan di bawah ini:</p>
                       <div className="pl-4 space-y-1">
-                        <div className="flex"><span className="w-32 shrink-0">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
-                        <div className="flex"><span className="w-32 shrink-0">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
+                        <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
+                        <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
                       </div>
 
-                      <p>Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <em>{searchResult.alasan}</em>, maka wewenang diberikan penuh kepada:</p>
+                      <p>Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <strong>{searchResult.alasan}</strong>, maka wewenang diberikan penuh kepada:</p>
                       <div className="pl-4 space-y-1">
-                        <div className="flex"><span className="w-32 shrink-0">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
-                        <div className="flex"><span className="w-32 shrink-0">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
+                        <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
+                        <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
                       </div>
 
                       <p>Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
                       <ol className="list-decimal list-outside ml-8 font-bold">
-                        {searchResult.wewenang.split(',').map((w, i) => (
-                          <li key={i} className="pl-1">{w.trim()}</li>
-                        ))}
+                        {searchResult.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
                       </ol>
 
                       <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(searchResult.berlaku_mulai)}</strong> hingga <strong>{formatDateId(searchResult.berlaku_sampai)}</strong>.</p>
@@ -799,25 +691,19 @@
                     </div>
 
                     <div className="mt-12 text-sm">
-                      {/* FIX #7: Guard tgl_terbit sebelum .split() agar tidak crash */}
-                      <p className="text-right mb-4">
-                        Tanjung, {searchResult.tgl_terbit ? formatDateId(searchResult.tgl_terbit) : formatDateId(new Date().toISOString().split('T')[0])}
-                      </p>
+                      <p className="text-right mb-4">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
                       <div className="flex justify-between text-center mt-10">
                         <div className="w-40">
                           <p className="mb-20">Pemberi Kuasa,</p>
                           <p className="font-bold underline">{searchResult.nama_pemberi}</p>
-                          <p className="text-xs">{searchResult.jabatan_pemberi}</p>
                         </div>
                         <div className="w-40">
                           <p className="mb-20">Ketua Pengurus,</p>
                           <p className="font-bold underline">Ageng Prasongko</p>
-                          <p className="text-xs">Ketua KOPKAR AKM</p>
                         </div>
                         <div className="w-40">
                           <p className="mb-20">Penerima Kuasa,</p>
                           <p className="font-bold underline">{searchResult.nama_penerima}</p>
-                          <p className="text-xs">{searchResult.jabatan_penerima}</p>
                         </div>
                       </div>
                     </div>
@@ -829,7 +715,6 @@
                 )}
               </div>
             )}
-
           </main>
         </div>
       );
