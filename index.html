@@ -875,20 +875,28 @@
                         <div className="w-40 relative">
                           <p className="mb-2">Pemberi Kuasa,</p>
                           <div className="h-16 flex items-center justify-center relative">
-                            {/* Tanda Tangan Digital */}
+                            {/* Tanda Tangan Digital Pemberi */}
                             {searchResult.ttd_pemberi && (
                               <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full mix-blend-multiply absolute z-10" />
                             )}
                           </div>
                           <p className="font-bold underline relative z-20">{searchResult.nama_pemberi}</p>
                         </div>
-                        <div className="w-40">
-                          <p className="mb-16">Ketua Pengurus,</p>
-                          <p className="font-bold underline">Ageng Prasongko</p>
+                        <div className="w-40 relative">
+                          <p className="mb-2">Ketua Pengurus,</p>
+                          <div className="h-16 flex items-center justify-center relative">
+                            {/* Tanda Tangan Ketua */}
+                            <img src="https://i.ibb.co.com/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="max-h-full mix-blend-multiply absolute z-10 scale-150" />
+                          </div>
+                          <p className="font-bold underline relative z-20">Ageng Prasongko</p>
                         </div>
-                        <div className="w-40">
-                          <p className="mb-16">Penerima Kuasa,</p>
-                          <p className="font-bold underline">{searchResult.nama_penerima}</p>
+                        <div className="w-40 relative">
+                          <p className="mb-2">Penerima Kuasa,</p>
+                          <div className="h-16 flex items-center justify-center relative">
+                            {/* Tanda Tangan Manager */}
+                            <img src="https://i.ibb.co.com/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="max-h-full mix-blend-multiply absolute z-10 scale-125" />
+                          </div>
+                          <p className="font-bold underline relative z-20">{searchResult.nama_penerima}</p>
                         </div>
                       </div>
                     </div>
