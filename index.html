@@ -361,6 +361,16 @@
         return dStr;
       };
 
+      // Efek untuk mengubah Judul Dokumen (File Name otomatis saat Print PDF)
+      useEffect(() => {
+        if (appView === 'cetak' && searchResult && searchResult.status === 'Disetujui') {
+          const tgl = searchResult.tgl_terbit ? searchResult.tgl_terbit.split('T')[0] : '';
+          document.title = `${searchResult.nomorSurat} - ${formatDateId(tgl)}`;
+        } else {
+          document.title = 'e-Surat Kuasa Digital';
+        }
+      }, [appView, searchResult]);
+
       return (
         <div className="min-h-screen flex flex-col">
           <header className="bg-[#0d1b2a] relative overflow-hidden no-print">
@@ -950,7 +960,7 @@
                               <div className="h-20 flex items-center justify-center">
                                 {/* Tanda Tangan Digital Pemberi */}
                                 {searchResult.ttd_pemberi && (
-                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="h-16 w-auto object-contain" />
+                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
                                 )}
                               </div>
                               <p className="font-bold underline">{searchResult.nama_pemberi}</p>
@@ -958,8 +968,8 @@
                             <div className="w-40">
                               <p className="mb-1">Ketua Pengurus,</p>
                               <div className="h-20 flex items-center justify-center">
-                                {/* Tanda Tangan Ketua - Layout Standar */}
-                                <img src="https://i.ibb.co/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" className="h-16 w-auto object-contain" />
+                                {/* Tanda Tangan Ketua - Layout Standar, dipaksa Inline Style agar ke-render PDF */}
+                                <img src="https://i.ibb.co/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
                               </div>
                               <p className="font-bold underline">Ageng Prasongko</p>
                             </div>
@@ -967,7 +977,7 @@
                               <p className="mb-1">Manager,</p>
                               <div className="h-20 flex items-center justify-center">
                                 {/* Tanda Tangan Manager */}
-                                <img src="https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" className="h-16 w-auto object-contain" />
+                                <img src="https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
                               </div>
                               <p className="font-bold underline">Fedrik</p>
                             </div>
