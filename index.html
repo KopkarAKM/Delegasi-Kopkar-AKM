@@ -15,12 +15,38 @@
   <style>
     body { font-family: 'DM Sans', sans-serif; }
     .font-playfair { font-family: 'Playfair Display', serif; }
+    
     @media print {
       @page { margin: 1cm; size: A4 portrait; }
       body { background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .no-print { display: none !important; }
-      .print-only { display: block !important; }
+      
+      /* Mengembalikan elemen cetak ke posisi normal di kertas */
+      .print-area-wrapper { 
+        position: static !important; 
+        width: auto !important; 
+        height: auto !important; 
+        overflow: visible !important; 
+        clip: auto !important; 
+        margin: 0 !important; 
+        white-space: normal !important;
+      }
       #print-area { padding: 0 !important; border: none !important; box-shadow: none !important; }
+    }
+
+    /* Trik Visually Hidden: Elemen disembunyikan dari layar tapi tetap dibaca oleh browser.
+      Ini memaksa browser mendownload gambar tanda tangan ImgBB sejak awal.
+    */
+    .print-area-wrapper {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
   </style>
 </head>
@@ -75,39 +101,10 @@
     // URL DEPLOY GOOGLE APPS SCRIPT ANDA
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3StTZHcqfSPJ53l-PMJDVyAalirTaC_5pUd4Jei0ILIcFTYb_3GL6XSjuf2UDot8T/exec';
 
-    // URL gambar tanda tangan pengurus
+    // URL gambar asli (bersih tanpa proxy rumit)
     const TTD_KETUA_URL = 'https://i.ibb.co/jPt85J0n/ageng-ttd.jpg';
     const TTD_MANAGER_URL = 'https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png';
     const LOGO_URL = 'https://i.ibb.co.com/WvTwLMn5/image-1.png';
-
-    // ============================================================
-    // FUNGSI UTAMA: Convert URL gambar ke base64 data URL
-    // Diperbarui dengan Proxy Ganda agar terhindar dari blokir CORS
-    // ============================================================
-    const toBase64 = async (url) => {
-      try {
-        // Coba proxy 1
-        let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
-        
-        // Jika gagal, gunakan proxy cadangan
-        if (!res.ok) {
-          res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
-        }
-        
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        
-        const blob = await res.blob();
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('FileReader gagal'));
-          reader.readAsDataURL(blob);
-        });
-      } catch (e) {
-        console.warn('Gagal konversi gambar ke base64, fallback ke URL asli:', url, e);
-        return url; // fallback ke URL asli jika fetch gagal total
-      }
-    };
 
     const App = () => {
       const params = new URLSearchParams(window.location.search);
@@ -131,24 +128,13 @@
 
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
 
-      const [ttdKetua, setTtdKetua] = useState('');
-      const [ttdManager, setTtdManager] = useState('');
-      const [logoBase64, setLogoBase64] = useState('');
-      const [assetsLoaded, setAssetsLoaded] = useState(false);
-
+      // Preload Otomatis: Menyuntikkan gambar ke cache memori sesaat setelah web terbuka.
       useEffect(() => {
-        const loadAssets = async () => {
-          const [ketua, manager, logo] = await Promise.all([
-            toBase64(TTD_KETUA_URL),
-            toBase64(TTD_MANAGER_URL),
-            toBase64(LOGO_URL),
-          ]);
-          setTtdKetua(ketua);
-          setTtdManager(manager);
-          setLogoBase64(logo);
-          setAssetsLoaded(true);
-        };
-        loadAssets();
+        const urls = [TTD_KETUA_URL, TTD_MANAGER_URL, LOGO_URL];
+        urls.forEach(url => {
+          const img = new Image();
+          img.src = url;
+        });
       }, []);
 
       const showAlert = (message) => {
@@ -218,18 +204,6 @@
         setSignatureData(null);
       };
 
-      const fetchGet = async (params) => {
-        try {
-          params._t = new Date().getTime(); 
-          const query = new URLSearchParams(params).toString();
-          const res = await fetch(`${GAS_URL}?${query}`, { method: 'GET' });
-          return await res.json();
-        } catch (err) {
-          console.warn("Kesalahan fetch GET:", err);
-          throw err;
-        }
-      };
-
       const fetchPost = async (payload) => {
         try {
           const res = await fetch(GAS_URL, {
@@ -278,7 +252,6 @@
         setFormStep(1);
       };
 
-      // PORTAL PERSETUJUAN
       const [approvalRole, setApprovalRole] = useState('');
       const [approvalPin, setApprovalPin] = useState('');
       const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -347,7 +320,6 @@
         return false;
       };
 
-      // CEK DAN CETAK
       const [searchNo, setSearchNo] = useState(initialNo);
       const [searchResult, setSearchResult] = useState(null);
       const [isSearching, setIsSearching] = useState(false);
@@ -415,7 +387,6 @@
         return dStr;
       };
 
-      // Efek untuk mengubah Judul Dokumen (File Name otomatis saat Print PDF)
       useEffect(() => {
         if (appView === 'cetak' && searchResult && searchResult.status === 'Disetujui') {
           const tgl = searchResult.tgl_terbit ? searchResult.tgl_terbit.split('T')[0] : '';
@@ -424,14 +395,6 @@
           document.title = 'e-Surat Kuasa Digital';
         }
       }, [appView, searchResult]);
-
-      const handlePrint = () => {
-        if (!assetsLoaded) {
-          showAlert('Gambar tanda tangan sedang dimuat, harap tunggu sebentar lalu coba lagi.');
-          return;
-        }
-        window.print();
-      };
 
       return (
         <div className="min-h-screen flex flex-col">
@@ -456,8 +419,6 @@
           </header>
 
           <main className="max-w-5xl mx-auto w-full p-4 sm:p-6 flex-grow">
-            
-            {/* VIEW FORM PENGAJUAN */}
             {appView === 'form' && (
               <div className="animate-in fade-in duration-500 no-print">
                 {formStep < 4 && (
@@ -610,7 +571,6 @@
                         </div>
                       </div>
 
-                      {/* AREA TANDA TANGAN DIGITAL */}
                       <div className="pt-2">
                         <label className="block text-xs font-bold text-[#0d1b2a] uppercase tracking-wider mb-3">Tanda Tangan Digital Pemberi Kuasa <span className="text-red-500">*</span></label>
                         <div className="border-2 border-dashed border-[#c9a84c] rounded-xl bg-white relative overflow-hidden shadow-inner">
@@ -677,7 +637,6 @@
               </div>
             )}
 
-            {/* VIEW PORTAL PERSETUJUAN */}
             {appView === 'approval' && (
               <div className="animate-in fade-in duration-500 no-print">
                 {!isLoggedIn ? (
@@ -776,7 +735,6 @@
                       </div>
                     </div>
 
-                    {/* MODAL TINJAUAN SURAT */}
                     {selectedSurat && (
                       <div className="fixed inset-0 bg-[#0d1b2a]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
                         <div className="bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -797,7 +755,6 @@
                               </div>
                             )}
 
-                            {/* RIWAYAT PERSETUJUAN MULTI-STEP */}
                             <div className="mt-4 border-t border-[#ddd5c0] pt-4">
                               <p className="text-[10px] uppercase text-slate-500 font-bold mb-3">Riwayat Persetujuan</p>
                               <div className="space-y-3">
@@ -853,7 +810,6 @@
               </div>
             )}
 
-            {/* VIEW CEK & CETAK */}
             {appView === 'cetak' && (
               <div className="animate-in fade-in duration-500">
                 {!searchResult ? (
@@ -956,11 +912,8 @@
 
                         <div className="mt-8 border-t border-[#ddd5c0] pt-6">
                           {searchResult.status === 'Disetujui' ? (
-                            <button onClick={handlePrint} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
-                              {!assetsLoaded 
-                                ? <span className="flex items-center gap-2"><span className="animate-spin">⏳</span> Memuat aset tanda tangan...</span>
-                                : <><Printer size={18} /> Cetak Salinan PDF Surat Kuasa</>
-                              }
+                            <button onClick={() => window.print()} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
+                              <Printer size={18} /> Cetak Salinan PDF Surat Kuasa
                             </button>
                           ) : (
                             <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
@@ -971,95 +924,97 @@
                       </div>
                     </div>
 
-                    {/* TAMPILAN CETAK PDF */}
+                    {/* TAMPILAN CETAK PDF: Menggunakan trik div-wrapper agar selalu dimuat */}
                     {searchResult && searchResult.status === 'Disetujui' && (
-                      <div id="print-area" className="hidden print-only text-black bg-white p-6 font-serif text-[13px] leading-snug">
-                        <div className="flex items-center border-b-[3px] border-double border-black pb-4 mb-6">
-                          <div className="w-20 shrink-0">
-                            <img 
-                              src={logoBase64 || LOGO_URL} 
-                              alt="Logo KOPKAR AKM" 
-                              className="w-full h-auto object-contain" 
-                            />
-                          </div>
-                          <div className="flex-1 text-center px-2">
-                            <h2 className="font-serif text-lg font-bold uppercase tracking-wide text-black mb-1">Koperasi Karyawan Adaro Karya Mandiri</h2>
-                            <p className="text-[11px] font-semibold text-black mb-1">Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p>
-                            <p className="text-[9px] text-black leading-normal">
-                              Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br/>
-                              Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan Kode Pos 71571<br/>
-                              Telp/Fax : 0526 – 2023593 &nbsp;|&nbsp; email : kopkar.adaro@gmail.com
-                            </p>
-                          </div>
-                          <div className="w-20 shrink-0"></div>
-                        </div>
-
-                        <div className="text-center mb-5">
-                          <h3 className="font-serif text-base font-bold underline tracking-widest">SURAT KUASA</h3>
-                          <p className="text-[11px] mt-1">Nomor Referensi: {searchResult.nomorSurat}</p>
-                        </div>
-
-                        <div className="leading-relaxed space-y-2">
-                          <p>Pihak yang bertanda tangan di bawah ini:</p>
-                          <div className="pl-4 space-y-0.5">
-                            <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
-                            <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
-                          </div>
-
-                          <p className="pt-1">Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <strong>{searchResult.alasan}</strong>, maka wewenang diberikan penuh kepada:</p>
-                          <div className="pl-4 space-y-0.5">
-                            <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
-                            <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
-                          </div>
-
-                          <p className="pt-1">Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
-                          <ol className="list-decimal list-outside ml-8 font-bold py-1">
-                            {searchResult.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
-                          </ol>
-
-                          <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(searchResult.berlaku_mulai)}</strong> hingga <strong>{formatDateId(searchResult.berlaku_sampai)}</strong>.</p>
-                          <p>Demikian surat ini disusun secara resmi agar seluruh pihak yang berkepentingan dapat memakluminya.</p>
-                        </div>
-
-                        <div className="mt-8 text-[13px]">
-                          <p className="text-right mb-2">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
-                          <div className="flex justify-between text-center mt-4">
-                            <div className="w-40">
-                              <p className="mb-1">Pemberi Kuasa,</p>
-                              <div className="h-20 flex items-center justify-center">
-                                {searchResult.ttd_pemberi && (
-                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
-                                )}
-                              </div>
-                              <p className="font-bold underline">{searchResult.nama_pemberi}</p>
+                      <div className="print-area-wrapper">
+                        <div id="print-area" className="text-black bg-white p-6 font-serif text-[13px] leading-snug">
+                          <div className="flex items-center border-b-[3px] border-double border-black pb-4 mb-6">
+                            <div className="w-20 shrink-0">
+                              <img 
+                                src={LOGO_URL} 
+                                alt="Logo KOPKAR AKM" 
+                                className="w-full h-auto object-contain" 
+                              />
                             </div>
-                            <div className="w-40">
-                              <p className="mb-1">Ketua Pengurus,</p>
-                              <div className="h-20 flex items-center justify-center">
-                                <img 
-                                  src={ttdKetua || TTD_KETUA_URL} 
-                                  alt="Tanda Tangan Ketua" 
-                                  style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
-                                />
-                              </div>
-                              <p className="font-bold underline">Ageng Prasongko</p>
+                            <div className="flex-1 text-center px-2">
+                              <h2 className="font-serif text-lg font-bold uppercase tracking-wide text-black mb-1">Koperasi Karyawan Adaro Karya Mandiri</h2>
+                              <p className="text-[11px] font-semibold text-black mb-1">Badan Hukum Nomor : 2128/BH/IX Tanggal 31 Juli 1995</p>
+                              <p className="text-[9px] text-black leading-normal">
+                                Office : Jl. Jend. A. Yani Komp. Swadharma Jalur II Blok Mawar RT IV<br/>
+                                Kel. Mabuun Kec. Murung Pudak Kab. Tabalong Prov. Kalimantan Selatan Kode Pos 71571<br/>
+                                Telp/Fax : 0526 – 2023593 &nbsp;|&nbsp; email : kopkar.adaro@gmail.com
+                              </p>
                             </div>
-                            <div className="w-40">
-                              <p className="mb-1">Manager,</p>
-                              <div className="h-20 flex items-center justify-center">
-                                <img 
-                                  src={ttdManager || TTD_MANAGER_URL} 
-                                  alt="Tanda Tangan Manager" 
-                                  style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
-                                />
+                            <div className="w-20 shrink-0"></div>
+                          </div>
+
+                          <div className="text-center mb-5">
+                            <h3 className="font-serif text-base font-bold underline tracking-widest">SURAT KUASA</h3>
+                            <p className="text-[11px] mt-1">Nomor Referensi: {searchResult.nomorSurat}</p>
+                          </div>
+
+                          <div className="leading-relaxed space-y-2">
+                            <p>Pihak yang bertanda tangan di bawah ini:</p>
+                            <div className="pl-4 space-y-0.5">
+                              <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_pemberi}</strong></span></div>
+                              <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_pemberi} KOPKAR AKM</span></div>
+                            </div>
+
+                            <p className="pt-1">Selanjutnya disebut sebagai <strong>PEMBERI KUASA</strong>. Mengingat pihak tersebut <strong>{searchResult.alasan}</strong>, maka wewenang diberikan penuh kepada:</p>
+                            <div className="pl-4 space-y-0.5">
+                              <div className="flex"><span className="w-32">Nama Lengkap</span><span>: <strong>{searchResult.nama_penerima}</strong></span></div>
+                              <div className="flex"><span className="w-32">Jabatan</span><span>: {searchResult.jabatan_penerima} KOPKAR AKM</span></div>
+                            </div>
+
+                            <p className="pt-1">Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
+                            <ol className="list-decimal list-outside ml-8 font-bold py-1">
+                              {searchResult.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
+                            </ol>
+
+                            <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(searchResult.berlaku_mulai)}</strong> hingga <strong>{formatDateId(searchResult.berlaku_sampai)}</strong>.</p>
+                            <p>Demikian surat ini disusun secara resmi agar seluruh pihak yang berkepentingan dapat memakluminya.</p>
+                          </div>
+
+                          <div className="mt-8 text-[13px]">
+                            <p className="text-right mb-2">Tanjung, {formatDateId(searchResult.tgl_terbit.split('T')[0])}</p>
+                            <div className="flex justify-between text-center mt-4">
+                              <div className="w-40">
+                                <p className="mb-1">Pemberi Kuasa,</p>
+                                <div className="h-20 flex items-center justify-center">
+                                  {searchResult.ttd_pemberi && (
+                                    <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                  )}
+                                </div>
+                                <p className="font-bold underline">{searchResult.nama_pemberi}</p>
                               </div>
-                              <p className="font-bold underline">Fedrik</p>
+                              <div className="w-40">
+                                <p className="mb-1">Ketua Pengurus,</p>
+                                <div className="h-20 flex items-center justify-center">
+                                  <img 
+                                    src={TTD_KETUA_URL} 
+                                    alt="Tanda Tangan Ketua" 
+                                    style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
+                                  />
+                                </div>
+                                <p className="font-bold underline">Ageng Prasongko</p>
+                              </div>
+                              <div className="w-40">
+                                <p className="mb-1">Manager,</p>
+                                <div className="h-20 flex items-center justify-center">
+                                  <img 
+                                    src={TTD_MANAGER_URL} 
+                                    alt="Tanda Tangan Manager" 
+                                    style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
+                                  />
+                                </div>
+                                <p className="font-bold underline">Fedrik</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="mt-12 border-t border-dashed border-slate-400 pt-2 text-[9px] text-slate-500 text-center">
-                          Lembar ini dikeluarkan oleh Sistem e-Surat Kuasa Digital KOPKAR AKM. Validasi Sistem: {searchResult.nomorSurat}
+                          <div className="mt-12 border-t border-dashed border-slate-400 pt-2 text-[9px] text-slate-500 text-center">
+                            Lembar ini dikeluarkan oleh Sistem e-Surat Kuasa Digital KOPKAR AKM. Validasi Sistem: {searchResult.nomorSurat}
+                          </div>
                         </div>
                       </div>
                     )}
