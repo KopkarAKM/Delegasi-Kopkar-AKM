@@ -75,6 +75,40 @@
     // URL DEPLOY GOOGLE APPS SCRIPT ANDA
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3StTZHcqfSPJ53l-PMJDVyAalirTaC_5pUd4Jei0ILIcFTYb_3GL6XSjuf2UDot8T/exec';
 
+    // URL gambar tanda tangan pengurus
+    const TTD_KETUA_URL = 'https://i.ibb.co/jPt85J0n/ageng-ttd.jpg';
+    const TTD_MANAGER_URL = 'https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png';
+    const LOGO_URL = 'https://i.ibb.co.com/WvTwLMn5/image-1.png';
+
+    // ============================================================
+    // FUNGSI UTAMA: Convert URL gambar ke base64 data URL
+    // Diperbarui dengan Proxy Ganda agar terhindar dari blokir CORS
+    // ============================================================
+    const toBase64 = async (url) => {
+      try {
+        // Coba proxy 1
+        let res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+        
+        // Jika gagal, gunakan proxy cadangan
+        if (!res.ok) {
+          res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent(url));
+        }
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const blob = await res.blob();
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('FileReader gagal'));
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        console.warn('Gagal konversi gambar ke base64, fallback ke URL asli:', url, e);
+        return url; // fallback ke URL asli jika fetch gagal total
+      }
+    };
+
     const App = () => {
       const params = new URLSearchParams(window.location.search);
       const initialView = params.get('view') || 'form';
@@ -95,32 +129,27 @@
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
 
-      const [ttdKetua, setTtdKetua] = useState('https://i.ibb.co/jPt85J0n/ageng-ttd.jpg');
-      const [ttdManager, setTtdManager] = useState('https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png');
+      const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
+
+      const [ttdKetua, setTtdKetua] = useState('');
+      const [ttdManager, setTtdManager] = useState('');
+      const [logoBase64, setLogoBase64] = useState('');
+      const [assetsLoaded, setAssetsLoaded] = useState(false);
 
       useEffect(() => {
-        const toBase64 = async (url) => {
-          try {
-            // Menggunakan proxy untuk menembus blokir CORS ImgBB
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            const res = await fetch(proxyUrl);
-            const blob = await res.blob();
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result);
-              reader.readAsDataURL(blob);
-            });
-          } catch (e) {
-            console.warn('Gagal konversi gambar ke base64:', url, e);
-            return url; 
-          }
+        const loadAssets = async () => {
+          const [ketua, manager, logo] = await Promise.all([
+            toBase64(TTD_KETUA_URL),
+            toBase64(TTD_MANAGER_URL),
+            toBase64(LOGO_URL),
+          ]);
+          setTtdKetua(ketua);
+          setTtdManager(manager);
+          setLogoBase64(logo);
+          setAssetsLoaded(true);
         };
-
-        toBase64('https://i.ibb.co/jPt85J0n/ageng-ttd.jpg').then(setTtdKetua);
-        toBase64('https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png').then(setTtdManager);
+        loadAssets();
       }, []);
-
-      const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
 
       const showAlert = (message) => {
         setDialog({ isOpen: true, type: 'alert', message, onConfirm: null });
@@ -386,6 +415,7 @@
         return dStr;
       };
 
+      // Efek untuk mengubah Judul Dokumen (File Name otomatis saat Print PDF)
       useEffect(() => {
         if (appView === 'cetak' && searchResult && searchResult.status === 'Disetujui') {
           const tgl = searchResult.tgl_terbit ? searchResult.tgl_terbit.split('T')[0] : '';
@@ -394,6 +424,14 @@
           document.title = 'e-Surat Kuasa Digital';
         }
       }, [appView, searchResult]);
+
+      const handlePrint = () => {
+        if (!assetsLoaded) {
+          showAlert('Gambar tanda tangan sedang dimuat, harap tunggu sebentar lalu coba lagi.');
+          return;
+        }
+        window.print();
+      };
 
       return (
         <div className="min-h-screen flex flex-col">
@@ -918,8 +956,11 @@
 
                         <div className="mt-8 border-t border-[#ddd5c0] pt-6">
                           {searchResult.status === 'Disetujui' ? (
-                            <button onClick={() => window.print()} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
-                              <Printer size={18} /> Cetak Salinan PDF Surat Kuasa
+                            <button onClick={handlePrint} className="w-full bg-[#0d1b2a] text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1a365d] transition-colors">
+                              {!assetsLoaded 
+                                ? <span className="flex items-center gap-2"><span className="animate-spin">⏳</span> Memuat aset tanda tangan...</span>
+                                : <><Printer size={18} /> Cetak Salinan PDF Surat Kuasa</>
+                              }
                             </button>
                           ) : (
                             <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl text-center">
@@ -930,12 +971,16 @@
                       </div>
                     </div>
 
-                    {/* TAMPILAN CETAK PDF (Hanya muncul jika di-print DAN status Disetujui) */}
+                    {/* TAMPILAN CETAK PDF */}
                     {searchResult && searchResult.status === 'Disetujui' && (
                       <div id="print-area" className="hidden print-only text-black bg-white p-6 font-serif text-[13px] leading-snug">
                         <div className="flex items-center border-b-[3px] border-double border-black pb-4 mb-6">
                           <div className="w-20 shrink-0">
-                            <img src="https://i.ibb.co.com/WvTwLMn5/image-1.png" alt="Logo KOPKAR AKM" className="w-full h-auto object-contain" />
+                            <img 
+                              src={logoBase64 || LOGO_URL} 
+                              alt="Logo KOPKAR AKM" 
+                              className="w-full h-auto object-contain" 
+                            />
                           </div>
                           <div className="flex-1 text-center px-2">
                             <h2 className="font-serif text-lg font-bold uppercase tracking-wide text-black mb-1">Koperasi Karyawan Adaro Karya Mandiri</h2>
@@ -982,9 +1027,8 @@
                             <div className="w-40">
                               <p className="mb-1">Pemberi Kuasa,</p>
                               <div className="h-20 flex items-center justify-center">
-                                {/* Tanda Tangan Digital Pemberi */}
                                 {searchResult.ttd_pemberi && (
-                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
+                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
                                 )}
                               </div>
                               <p className="font-bold underline">{searchResult.nama_pemberi}</p>
@@ -992,16 +1036,22 @@
                             <div className="w-40">
                               <p className="mb-1">Ketua Pengurus,</p>
                               <div className="h-20 flex items-center justify-center">
-                                {/* Tanda Tangan Ketua - Layout Standar */}
-                                <img src={ttdKetua} alt="Tanda Tangan Ketua" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
+                                <img 
+                                  src={ttdKetua || TTD_KETUA_URL} 
+                                  alt="Tanda Tangan Ketua" 
+                                  style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
+                                />
                               </div>
                               <p className="font-bold underline">Ageng Prasongko</p>
                             </div>
                             <div className="w-40">
                               <p className="mb-1">Manager,</p>
                               <div className="h-20 flex items-center justify-center">
-                                {/* Tanda Tangan Manager */}
-                                <img src={ttdManager} alt="Tanda Tangan Manager" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
+                                <img 
+                                  src={ttdManager || TTD_MANAGER_URL} 
+                                  alt="Tanda Tangan Manager" 
+                                  style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} 
+                                />
                               </div>
                               <p className="font-bold underline">Fedrik</p>
                             </div>
