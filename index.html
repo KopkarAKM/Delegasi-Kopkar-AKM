@@ -95,6 +95,31 @@
       const canvasRef = useRef(null);
       const [isDrawing, setIsDrawing] = useState(false);
 
+      const [ttdKetua, setTtdKetua] = useState('https://i.ibb.co/jPt85J0n/ageng-ttd.jpg');
+      const [ttdManager, setTtdManager] = useState('https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png');
+
+      useEffect(() => {
+        const toBase64 = async (url) => {
+          try {
+            // Menggunakan proxy untuk menembus blokir CORS ImgBB
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+            const res = await fetch(proxyUrl);
+            const blob = await res.blob();
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.readAsDataURL(blob);
+            });
+          } catch (e) {
+            console.warn('Gagal konversi gambar ke base64:', url, e);
+            return url; 
+          }
+        };
+
+        toBase64('https://i.ibb.co/jPt85J0n/ageng-ttd.jpg').then(setTtdKetua);
+        toBase64('https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png').then(setTtdManager);
+      }, []);
+
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
 
       const showAlert = (message) => {
@@ -361,7 +386,6 @@
         return dStr;
       };
 
-      // Efek untuk mengubah Judul Dokumen (File Name otomatis saat Print PDF)
       useEffect(() => {
         if (appView === 'cetak' && searchResult && searchResult.status === 'Disetujui') {
           const tgl = searchResult.tgl_terbit ? searchResult.tgl_terbit.split('T')[0] : '';
@@ -960,7 +984,7 @@
                               <div className="h-20 flex items-center justify-center">
                                 {/* Tanda Tangan Digital Pemberi */}
                                 {searchResult.ttd_pemberi && (
-                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                  <img src={searchResult.ttd_pemberi} alt="Tanda Tangan Pemberi Kuasa" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
                                 )}
                               </div>
                               <p className="font-bold underline">{searchResult.nama_pemberi}</p>
@@ -968,8 +992,8 @@
                             <div className="w-40">
                               <p className="mb-1">Ketua Pengurus,</p>
                               <div className="h-20 flex items-center justify-center">
-                                {/* Tanda Tangan Ketua - Layout Standar, dipaksa Inline Style agar ke-render PDF */}
-                                <img src="https://i.ibb.co/jPt85J0n/ageng-ttd.jpg" alt="Tanda Tangan Ketua" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                {/* Tanda Tangan Ketua - Layout Standar */}
+                                <img src={ttdKetua} alt="Tanda Tangan Ketua" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
                               </div>
                               <p className="font-bold underline">Ageng Prasongko</p>
                             </div>
@@ -977,7 +1001,7 @@
                               <p className="mb-1">Manager,</p>
                               <div className="h-20 flex items-center justify-center">
                                 {/* Tanda Tangan Manager */}
-                                <img src="https://i.ibb.co/Jj2FC9VG/Fedrik-ttd-removebg-preview.png" alt="Tanda Tangan Manager" style={{ maxHeight: '70px', maxWidth: '140px', objectFit: 'contain' }} />
+                                <img src={ttdManager} alt="Tanda Tangan Manager" className="max-h-full object-contain" style={{ maxHeight: '70px', maxWidth: '140px' }} />
                               </div>
                               <p className="font-bold underline">Fedrik</p>
                             </div>
