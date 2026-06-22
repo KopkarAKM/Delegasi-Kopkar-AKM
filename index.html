@@ -7,10 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.6/babel.min.js"></script>
 
   <style>
     body { font-family: 'DM Sans', sans-serif; }
@@ -73,22 +74,18 @@
     const Trash2Icon = (p) => <Icon path={icons.Trash2} {...p} />;
     const PenToolIcon = (p) => <Icon path={icons.PenTool} {...p} />;
 
-    // URL DEPLOY GOOGLE APPS SCRIPT ANDA
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbz3StTZHcqfSPJ53l-PMJDVyAalirTaC_5pUd4Jei0ILIcFTYb_3GL6XSjuf2UDot8T/exec';
 
-    // URL gambar asli (diperbarui sesuai tautan Anda)
     const TTD_KETUA_URL = 'https://i.ibb.co.com/jPt85J0n/ageng-ttd.jpg';
     const TTD_MANAGER_URL = 'https://i.ibb.co.com/Jj2FC9VG/Fedrik-ttd-removebg-preview.png';
     const LOGO_URL = 'https://i.ibb.co.com/WvTwLMn5/image-1.png';
 
-    // Fungsi perantara CDN penembus blokir ImgBB
     const proxify = (url) => {
       if (!url || url.startsWith('data:')) return url;
       const clean = url.replace(/^https?:\/\//, '');
       return `https://wsrv.nl/?url=${encodeURIComponent(clean)}&output=png`;
     };
 
-    // Komponen Khusus Konten Surat agar tidak ada pengulangan kode
     const SuratContent = ({ result, formatDateId }) => (
       <React.Fragment>
         <div className="flex items-center border-b-[3px] border-double border-black pb-4 mb-6">
@@ -127,7 +124,7 @@
 
           <p className="pt-1">Selanjutnya disebut sebagai <strong>PENERIMA KUASA</strong>. Pihak penerima berhak melaksanakan tindakan berikut ini:</p>
           <ol className="list-decimal list-outside ml-8 font-bold py-1">
-            {result.wewenang.split(',').map((w, i) => <li key={i} className="pl-1">{w.trim()}</li>)}
+            {String(result.wewenang || '').split(',').map((w, i) => w.trim() ? <li key={i} className="pl-1">{w.trim()}</li> : null)}
           </ol>
 
           <p>Surat penetapan kuasa ini diterbitkan untuk masa berlaku mulai <strong>{formatDateId(result.berlaku_mulai)}</strong> hingga <strong>{formatDateId(result.berlaku_sampai)}</strong>.</p>
@@ -135,7 +132,7 @@
         </div>
 
         <div className="mt-8 text-[13px]">
-          <p className="text-right mb-2">Tanjung, {formatDateId(result.tgl_terbit.split('T')[0])}</p>
+          <p className="text-right mb-2">Tanjung, {formatDateId(result.tgl_terbit ? String(result.tgl_terbit).split('T')[0] : '')}</p>
           <div className="flex justify-between text-center mt-4">
             <div className="w-40">
               <p className="mb-1">Pemberi Kuasa,</p>
@@ -191,7 +188,6 @@
 
       const [dialog, setDialog] = useState({ isOpen: false, type: 'alert', message: '', onConfirm: null });
 
-      // Preload otomatis gambar saat aplikasi dibuka
       useEffect(() => {
         const urls = [proxify(TTD_KETUA_URL), proxify(TTD_MANAGER_URL), proxify(LOGO_URL)];
         urls.forEach(url => {
@@ -452,7 +448,7 @@
 
       useEffect(() => {
         if (appView === 'cetak' && searchResult && searchResult.status === 'Disetujui') {
-          const tgl = searchResult.tgl_terbit ? searchResult.tgl_terbit.split('T')[0] : '';
+          const tgl = searchResult.tgl_terbit ? String(searchResult.tgl_terbit).split('T')[0] : '';
           document.title = `${searchResult.nomorSurat} - ${formatDateId(tgl)}`;
         } else {
           document.title = 'e-Surat Kuasa Digital';
@@ -827,7 +823,7 @@
                                   </div>
                                   <div>
                                     <p className="text-sm font-bold text-[#0d1b2a]">Ketua Koperasi {selectedSurat.status_ketua ? `(${selectedSurat.status_ketua})` : '(Menunggu)'}</p>
-                                    {selectedSurat.tgl_ketua && <p className="text-xs text-slate-500">{formatDateId(selectedSurat.tgl_ketua.split('T')[0])}</p>}
+                                    {selectedSurat.tgl_ketua && <p className="text-xs text-slate-500">{formatDateId(String(selectedSurat.tgl_ketua || '').split('T')[0])}</p>}
                                     {selectedSurat.catatan_ketua && <p className="text-xs italic text-slate-600 mt-1">"{selectedSurat.catatan_ketua}"</p>}
                                   </div>
                                 </div>
@@ -838,7 +834,7 @@
                                   </div>
                                   <div>
                                     <p className="text-sm font-bold text-[#0d1b2a]">Manager KOPKAR {selectedSurat.status_manager ? `(${selectedSurat.status_manager})` : '(Menunggu)'}</p>
-                                    {selectedSurat.tgl_manager && <p className="text-xs text-slate-500">{formatDateId(selectedSurat.tgl_manager.split('T')[0])}</p>}
+                                    {selectedSurat.tgl_manager && <p className="text-xs text-slate-500">{formatDateId(String(selectedSurat.tgl_manager || '').split('T')[0])}</p>}
                                     {selectedSurat.catatan_manager && <p className="text-xs italic text-slate-600 mt-1">"{selectedSurat.catatan_manager}"</p>}
                                   </div>
                                 </div>
@@ -962,7 +958,7 @@
                         </div>
 
                         <div className="space-y-4">
-                          <div className="flex items-center gap-3"><CheckCircle size={16} className="text-[#1a6b4a]" /><span className="text-sm">Pengajuan Berhasil ({formatDateId(searchResult.tgl_submit.split('T')[0])})</span></div>
+                          <div className="flex items-center gap-3"><CheckCircle size={16} className="text-[#1a6b4a]" /><span className="text-sm">Pengajuan Berhasil ({formatDateId(searchResult.tgl_submit ? String(searchResult.tgl_submit).split('T')[0] : '')})</span></div>
                           <div className="flex items-center gap-3">
                             {searchResult.status_ketua === 'Setuju' ? <CheckCircle size={16} className="text-[#1a6b4a]" /> : searchResult.status_ketua === 'Tolak' ? <XIcon size={16} className="text-red-600" /> : <Clock size={16} className="text-slate-400" />}
                             <span className="text-sm">Respons Ketua {searchResult.catatan_ketua && <span className="text-slate-500 italic">"{searchResult.catatan_ketua}"</span>}</span>
@@ -975,7 +971,6 @@
                       </div>
                     </div>
 
-                    {/* PRATINJAU TAMPIL DI LAYAR SEBELUM DICETAK */}
                     {searchResult && searchResult.status === 'Disetujui' && (
                       <div className="mt-10 border-t border-dashed border-slate-300 pt-8">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 no-print">
@@ -988,14 +983,12 @@
                           </button>
                         </div>
                         
-                        {/* Container Kertas di Layar (Visualisasi) */}
                         <div className="bg-slate-200 p-4 sm:p-8 rounded-2xl overflow-x-auto flex justify-center border border-slate-300 no-print">
                           <div className="bg-white w-[210mm] min-h-[297mm] p-[15mm] sm:p-[20mm] shadow-lg text-black font-serif text-[13px] leading-snug shrink-0">
                             <SuratContent result={searchResult} formatDateId={formatDateId} />
                           </div>
                         </div>
 
-                        {/* Container Kertas Sesungguhnya Saat di-Print */}
                         <div className="hidden print-only">
                           <div id="print-area" className="bg-white text-black font-serif text-[13px] leading-snug">
                             <SuratContent result={searchResult} formatDateId={formatDateId} />
@@ -1009,7 +1002,6 @@
             )}
           </main>
 
-          {/* MODAL DIALOG CUSTOM (Global) */}
           {dialog.isOpen && (
             <div className="fixed inset-0 bg-[#0d1b2a]/70 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] no-print">
               <div className="bg-white rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95">
